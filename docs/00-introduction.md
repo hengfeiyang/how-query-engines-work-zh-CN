@@ -1,23 +1,23 @@
-# Introduction
+# 介绍
 
-Since starting my first job in software engineering, I have been fascinated with databases and query languages. It seems almost magical to ask a computer a question and get meaningful data back efficiently. After many years of working as a generalist software developer and an end-user of data technologies, I started working for a startup that threw me into the deep end of distributed database development. This is the book that I wish had existed when I started on this journey. Although this is only an introductory-level book, I hope to demystify how query engines work.
+自从开始我的第一份软件工程工作以来，我就对数据库和查询语言着迷。向计算机提出问题并有效地获取有意义的数据几乎像魔法一样。在多年作为通用软件开发者和数据技术终端用户的经验后，我开始在一家初创公司工作，这让我深入到了分布式数据库开发的领域。当我开始这段旅程时，我多么希望这本书已经存在。虽然这只是一本入门级的书籍，但我希望能够揭开查询引擎如何工作的神秘面纱。
 
-My interest in query engines eventually led to me becoming involved in the Apache Arrow project, where I donated the initial Rust implementation in 2018, then donated the DataFusion in-memory query engine in 2019, and finally, donated the Ballista distributed compute project in 2021. I do not plan on building anything else outside the Arrow project and am now continuing to contribute to these projects within Arrow.
+我对查询引擎的兴趣最终使我参与了 Apache Arrow 项目，我在 2018 年捐赠了最初的 Rust 实现，然后在 2019 年捐赠了 DataFusion 内存查询引擎，最后在 2021 年捐赠了 Ballista 分布式计算项目. 我不打算再构建 Arrow 项目之外的任何其他东西，并且现在我将继续为 Arrow 中的这些项目做出贡献。
 
-The Arrow project now has many active committers and contributors working on the Rust implementation, and it has improved significantly compared to my initial contribution.
+Arrow 项目现在有许多活跃的提交者和贡献者致力于 Rust 实现，与我最初的贡献相比，已经有了显著的改进。
 
-Although Rust is a great choice for a high-performance query engine, it is not ideal for teaching the concepts around query engines, so I recently built a new query engine, implemented in Kotlin, as I was writing this book. Kotlin is a very concise language and easy to read, making it possible to include source code examples in this book. I would encourage you to get familiar with the source code as you work your way through this book and consider making some contributions. There is no better way to learn than to get some hands-on experience!
+尽管 Rust 是高性能查询引擎的绝佳选择，但它并不适合教授查询引擎的相关概念，因此我在编写本书时使用 Kotlin 构建了一个新的查询引擎。Kotlin 是一种非常简洁且易于阅读的语言，使得可以在本书中包含源代码示例。我鼓励您在阅读本书时熟悉源代码，并考虑做出一些贡献。没有比动手实践更好的学习方法了！
 
-The query engine covered in this book was originally intended to be part of the Ballista project (and was for a while) but as the project evolved, it became apparent that it would make more sense to keep the query engine in Rust and support Java, and other languages, through a UDF mechanism rather than duplicating large amounts of query execution logic in multiple languages.
+本书中介绍的查询引擎最初打算作为 Ballista 项目（并曾经是）的一部分，但随着项目的发展，显然将查询引擎保留在 Rust 中并通过 UDF 机制支持 Java 和其他语言，而不是在多种语言中复制大量的查询执行逻辑更有意义。
 
-Now that Ballista has been donated to Apache Arrow, I have updated this book to refer to the query engine in the companion repository simply as "KQuery", short for Kotlin Query Engine, but if anyone has suggestions for a better name, please let me know!
+现在 Ballista 已捐赠给 Apache Arrow，我已经更新了本书，将配套存储库中的查询引擎简称为“KQuery”，是 Kotlin 查询引擎的缩写，但如果有人有更好的名称建议，请告诉我！
 
-Updates to this book will be made available free of charge as they become available, so please check back occasionally or follow me on Twitter (@andygrove_io) to receive notifications when new content is available.
+本书内容更新将免费提供，请偶尔回来查看或者关注我的 Twitter (@andygrove_io) 以便在有新内容是收到通知。
 
-## Feedback
+## 反馈
 
-Please send me a DM on Twitter at @andygrove_io or send an email to agrove@apache.org if you have any feedback on this book.
+如果您对这本书有任何反馈，请通过 Twitter @andygrove_io 向我发送私信或发送电子邮件至 agrove@apache.org。
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**
