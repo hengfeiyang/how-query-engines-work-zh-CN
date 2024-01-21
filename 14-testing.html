@@ -1,0 +1,366 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Testing - How Query Engines Work 中文版</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">译者注</a></li><li class="chapter-item expanded "><a href="00-acknowledgments.html"><strong aria-hidden="true">1.</strong> Acknowledgments</a></li><li class="chapter-item expanded "><a href="00-introduction.html"><strong aria-hidden="true">2.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01-what-is-a-query-engine.html"><strong aria-hidden="true">3.</strong> What Is a Query Engine?</a></li><li class="chapter-item expanded "><a href="02-apache-arrow.html"><strong aria-hidden="true">4.</strong> Apache Arrow</a></li><li class="chapter-item expanded "><a href="03-type-system.html"><strong aria-hidden="true">5.</strong> Type System</a></li><li class="chapter-item expanded "><a href="04-data-sources.html"><strong aria-hidden="true">6.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="05-logical-plan.html"><strong aria-hidden="true">7.</strong> Logical Plans</a></li><li class="chapter-item expanded "><a href="06-dataframe.html"><strong aria-hidden="true">8.</strong> Dataframes</a></li><li class="chapter-item expanded "><a href="07-physical-plan.html"><strong aria-hidden="true">9.</strong> Physical Plans</a></li><li class="chapter-item expanded "><a href="08-query-planner.html"><strong aria-hidden="true">10.</strong> Query Planning</a></li><li class="chapter-item expanded "><a href="09-optimizations.html"><strong aria-hidden="true">11.</strong> Query Optimizers</a></li><li class="chapter-item expanded "><a href="10-execution.html"><strong aria-hidden="true">12.</strong> Query Execution</a></li><li class="chapter-item expanded "><a href="11-sql-support.html"><strong aria-hidden="true">13.</strong> SQL Support</a></li><li class="chapter-item expanded "><a href="12-parallel-query.html"><strong aria-hidden="true">14.</strong> Parallel Query Execution</a></li><li class="chapter-item expanded "><a href="13-distributed-query.html"><strong aria-hidden="true">15.</strong> Distributed Query Execution</a></li><li class="chapter-item expanded "><a href="14-testing.html" class="active"><strong aria-hidden="true">16.</strong> Testing</a></li><li class="chapter-item expanded "><a href="15-benchmarks.html"><strong aria-hidden="true">17.</strong> Benchmarks</a></li><li class="chapter-item expanded "><a href="16-further-resources.html"><strong aria-hidden="true">18.</strong> Further Resources</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">How Query Engines Work 中文版</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
+<p>Query engines are complex, and it is easy to inadvertently introduce subtle bugs that could result in queries returning incorrect results, so it is important to have rigorous testing in place.</p>
+<h2 id="unit-testing"><a class="header" href="#unit-testing">Unit Testing</a></h2>
+<p>An excellent first step is to write unit tests for the individual operators and expressions, asserting that they produce the correct output for a given input. It is also essential to cover error cases.</p>
+<p>Here are some suggestions for things to consider when writing unit tests:</p>
+<ul>
+<li>What happens if an unexpected data type is used? For example, calculating <code>SUM</code> on an input of strings.</li>
+<li>Tests should cover edge cases, such as using the minimum and maximum values for numeric data types, and NaN (not a number) for floating point types, to ensure that they are handled correctly.</li>
+<li>Tests should exist for underflow and overflow cases. For example, what happens when two long (64-bit) integer types are multiplied?</li>
+<li>Tests should also ensure that null values are handled correctly.</li>
+</ul>
+<p>When writing these tests, it is important to be able to construct record batches and column vectors with arbitrary data to use as inputs for operators and expressions. Here is an example of such a utility method.</p>
+<pre><code class="language-kotlin">private fun createRecordBatch(schema: Schema,
+                              columns: List&lt;List&lt;Any?&gt;&gt;): RecordBatch {
+
+    val rowCount = columns[0].size
+    val root = VectorSchemaRoot.create(schema.toArrow(),
+                                       RootAllocator(Long.MAX_VALUE))
+    root.allocateNew()
+    (0 until rowCount).forEach { row -&gt;
+        (0 until columns.size).forEach { col -&gt;
+            val v = root.getVector(col)
+            val value = columns[col][row]
+            when (v) {
+                is Float4Vector -&gt; v.set(row, value as Float)
+                is Float8Vector -&gt; v.set(row, value as Double)
+                ...
+            }
+        }
+    }
+    root.rowCount = rowCount
+
+    return RecordBatch(schema, root.fieldVectors.map { ArrowFieldVector(it) })
+}
+</code></pre>
+<p>Here is an example unit test for the &quot;greater than or equals&quot; (<code>&gt;=</code>) expression being evaluated against a record batch containing two columns containing double-precision floating point values.</p>
+<pre><code class="language-kotlin">@Test
+fun `gteq doubles`() {
+
+    val schema = Schema(listOf(
+            Field(&quot;a&quot;, ArrowTypes.DoubleType),
+            Field(&quot;b&quot;, ArrowTypes.DoubleType)
+    ))
+
+    val a: List&lt;Double&gt; = listOf(0.0, 1.0,
+                                 Double.MIN_VALUE, Double.MAX_VALUE, Double.NaN)
+    val b = a.reversed()
+
+    val batch = createRecordBatch(schema, listOf(a,b))
+
+    val expr = GtEqExpression(ColumnExpression(0), ColumnExpression(1))
+    val result = expr.evaluate(batch)
+
+    assertEquals(a.size, result.size())
+    (0 until result.size()).forEach {
+        assertEquals(if (a[it] &gt;= b[it]) 1 else 0, result.getValue(it))
+    }
+}
+</code></pre>
+<h2 id="integration-testing"><a class="header" href="#integration-testing">Integration Testing</a></h2>
+<p>Once unit tests are in place, the next step is to write integration tests that execute queries consisting of multiple operators and expressions and assert that they produce the expected output.</p>
+<p>There are a few popular approaches to integration testing of query engines:</p>
+<ul>
+<li><strong>Imperative Testing</strong>: Hard-coded queries and expected results, either written as code or stored as files containing the queries and results.</li>
+<li><strong>Comparative Testing</strong>: This approach involves executing queries against another (trusted) query engine and asserting that both query engines produced the same results.</li>
+<li><strong>Fuzzing</strong>: Generating random operator and expression trees to capture edge cases and get comprehensive test coverage.</li>
+</ul>
+<h2 id="fuzzing"><a class="header" href="#fuzzing">Fuzzing</a></h2>
+<p>Much of the complexity of query engines comes from the fact that operators and expressions can be combined through infinite combinations due to the nested nature of operator and expression trees, and it is unlikely that hand-coding test queries will be comprehensive enough.</p>
+<p>Fuzzing is a technique for producing random input data. When applied to query engines, this means creating random query plans.</p>
+<p>Here is an example of creating random expressions against a DataFrame. This is a recursive method and can produce deeply nested expression trees, so it is important to build in a maximum depth mechanism.</p>
+<pre><code class="language-kotlin">fun createExpression(input: DataFrame, depth: Int, maxDepth: Int): LogicalExpr {
+    return if (depth == maxDepth) {
+        // return a leaf node
+        when (rand.nextInt(4)) {
+            0 -&gt; ColumnIndex(rand.nextInt(input.schema().fields.size))
+            1 -&gt; LiteralDouble(rand.nextDouble())
+            2 -&gt; LiteralLong(rand.nextLong())
+            3 -&gt; LiteralString(randomString(rand.nextInt(64)))
+            else -&gt; throw IllegalStateException()
+        }
+    } else {
+        // binary expressions
+        val l = createExpression(input, depth+1, maxDepth)
+        val r = createExpression(input, depth+1, maxDepth)
+        return when (rand.nextInt(8)) {
+            0 -&gt; Eq(l, r)
+            1 -&gt; Neq(l, r)
+            2 -&gt; Lt(l, r)
+            3 -&gt; LtEq(l, r)
+            4 -&gt; Gt(l, r)
+            5 -&gt; GtEq(l, r)
+            6 -&gt; And(l, r)
+            7 -&gt; Or(l, r)
+            else -&gt; throw IllegalStateException()
+        }
+    }
+}
+</code></pre>
+<p>Here is example of an expression generated with this method. Note that column references are represented here with an index following a hash, e.g. <code>#1</code> represents column at index 1. This expression is almost certainly invalid (depending on the query engine implementation), and this is to be expected when using a fuzzer. This is still valuable because it will test error conditions that otherwise would not be covered when manually writing tests.</p>
+<pre><code>#5 &gt; 0.5459397414890019 &lt; 0.3511239641785846 OR 0.9137719758607572 &gt; -6938650321297559787 &lt; #0 AND #3 &lt; #4 AND 'qn0NN' OR '1gS46UuarGz2CdeYDJDEW3Go6ScMmRhA3NgPJWMpgZCcML1Ped8haRxOkM9F' &gt;= -8765295514236902140 &lt; 4303905842995563233 OR 'IAseGJesQMOI5OG4KrkitichlFduZGtjXoNkVQI0Alaf2ELUTTIci' = 0.857970478666058 &gt;= 0.8618195163699196 &lt;= '9jaFR2kDX88qrKCh2BSArLq517cR8u2' OR 0.28624225053564 &lt;= 0.6363627130199404 &gt; 0.19648131921514966 &gt;= -567468767705106376 &lt;= #0 AND 0.6582592932801918 = 'OtJ0ryPUeSJCcMnaLngBDBfIpJ9SbPb6hC5nWqeAP1rWbozfkPjcKdaelzc' &gt;= #0 &gt;= -2876541212976899342 = #4 &gt;= -3694865812331663204 = 'gWkQLswcU' != #3 &gt; 'XiXzKNrwrWnQmr3JYojCVuncW9YaeFc' &gt;= 0.5123788261193981 &gt;= #2
+</code></pre>
+<p>A similar approach can be taken when creating logical query plans.</p>
+<pre><code class="language-kotlin">fun createPlan(input: DataFrame,
+               depth: Int,
+               maxDepth: Int,
+               maxExprDepth: Int): DataFrame {
+
+    return if (depth == maxDepth) {
+        input
+    } else {
+        // recursively create an input plan
+        val child = createPlan(input, depth+1, maxDepth, maxExprDepth)
+        // apply a transformation to the plan
+        when (rand.nextInt(2)) {
+            0 -&gt; {
+                val exprCount = 1.rangeTo(rand.nextInt(1, 5))
+                child.project(exprCount.map {
+                    createExpression(child, 0, maxExprDepth)
+                })
+            }
+            1 -&gt; child.filter(createExpression(input, 0, maxExprDepth))
+            else -&gt; throw IllegalStateException()
+        }
+    }
+}
+</code></pre>
+<p>Here is an example of a logical query plan produced by this code.</p>
+<pre><code>Filter: 'VejBmVBpYp7gHxHIUB6UcGx' OR 0.7762591612853446
+  Filter: 'vHGbOKKqR' &lt;= 0.41876514212913307
+    Filter: 0.9835090312561898 &lt;= 3342229749483308391
+      Filter: -5182478750208008322 &lt; -8012833501302297790
+        Filter: 0.3985688976088563 AND #1
+          Filter: #5 OR 'WkaZ54spnoI4MBtFpQaQgk'
+            Scan: employee.csv; projection=None
+</code></pre>
+<p>This straightforward approach to fuzzing will produce a high percentage of invalid plans. It could be improved to reduce the risk of creating invalid logical plans and expressions by adding more contextual awareness. For example, generating an <code>AND</code> expression could generate left and right expressions that produce a Boolean result. However, there is a danger in only creating correct plans because it could limit the test coverage. Ideally, it should be possible to configure the fuzzer with rules for producing query plans with different characteristics.</p>
+<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="13-distributed-query.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="15-benchmarks.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="13-distributed-query.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="15-benchmarks.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

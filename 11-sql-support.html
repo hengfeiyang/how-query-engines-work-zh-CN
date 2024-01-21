@@ -1,0 +1,531 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>SQL Support - How Query Engines Work 中文版</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">译者注</a></li><li class="chapter-item expanded "><a href="00-acknowledgments.html"><strong aria-hidden="true">1.</strong> Acknowledgments</a></li><li class="chapter-item expanded "><a href="00-introduction.html"><strong aria-hidden="true">2.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01-what-is-a-query-engine.html"><strong aria-hidden="true">3.</strong> What Is a Query Engine?</a></li><li class="chapter-item expanded "><a href="02-apache-arrow.html"><strong aria-hidden="true">4.</strong> Apache Arrow</a></li><li class="chapter-item expanded "><a href="03-type-system.html"><strong aria-hidden="true">5.</strong> Type System</a></li><li class="chapter-item expanded "><a href="04-data-sources.html"><strong aria-hidden="true">6.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="05-logical-plan.html"><strong aria-hidden="true">7.</strong> Logical Plans</a></li><li class="chapter-item expanded "><a href="06-dataframe.html"><strong aria-hidden="true">8.</strong> Dataframes</a></li><li class="chapter-item expanded "><a href="07-physical-plan.html"><strong aria-hidden="true">9.</strong> Physical Plans</a></li><li class="chapter-item expanded "><a href="08-query-planner.html"><strong aria-hidden="true">10.</strong> Query Planning</a></li><li class="chapter-item expanded "><a href="09-optimizations.html"><strong aria-hidden="true">11.</strong> Query Optimizers</a></li><li class="chapter-item expanded "><a href="10-execution.html"><strong aria-hidden="true">12.</strong> Query Execution</a></li><li class="chapter-item expanded "><a href="11-sql-support.html" class="active"><strong aria-hidden="true">13.</strong> SQL Support</a></li><li class="chapter-item expanded "><a href="12-parallel-query.html"><strong aria-hidden="true">14.</strong> Parallel Query Execution</a></li><li class="chapter-item expanded "><a href="13-distributed-query.html"><strong aria-hidden="true">15.</strong> Distributed Query Execution</a></li><li class="chapter-item expanded "><a href="14-testing.html"><strong aria-hidden="true">16.</strong> Testing</a></li><li class="chapter-item expanded "><a href="15-benchmarks.html"><strong aria-hidden="true">17.</strong> Benchmarks</a></li><li class="chapter-item expanded "><a href="16-further-resources.html"><strong aria-hidden="true">18.</strong> Further Resources</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">How Query Engines Work 中文版</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="sql-support"><a class="header" href="#sql-support">SQL Support</a></h1>
+<p><em>The source code discussed in this chapter can be found in the <code>sql</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
+<p>In addition to having the ability to hand-code logical plans, it would be more convenient in some cases to just write SQL. In this chapter, we will build a SQL parser and query planner that can translate SQL queries into logical plans.</p>
+<h2 id="tokenizer"><a class="header" href="#tokenizer">Tokenizer</a></h2>
+<p>The first step is to convert the SQL query string into a list of tokens representing keywords, literals, identifiers, and operators.</p>
+<p>This is a subset of all possible tokens, but it is sufficient for now.</p>
+<pre><code class="language-kotlin">interface Token
+data class IdentifierToken(val s: String) : Token
+data class LiteralStringToken(val s: String) : Token
+data class LiteralLongToken(val s: String) : Token
+data class KeywordToken(val s: String) : Token
+data class OperatorToken(val s: String) : Token
+</code></pre>
+<p>We will then need a tokenizer class. This is not particularly interesting to walk through here, and full source code can be found in the companion GitHub repository.</p>
+<pre><code class="language-kotlin">class Tokenizer {
+  fun tokenize(sql: String): List&lt;Token&gt; {
+    // see github repo for code
+  }
+}
+</code></pre>
+<p>Given the input <code>&quot;SELECT a + b FROM c&quot;</code> we expect the output to be as follows:</p>
+<pre><code class="language-kotlin">listOf(
+  KeywordToken(&quot;SELECT&quot;),
+  IdentifierToken(&quot;a&quot;),
+  OperatorToken(&quot;+&quot;),
+  IdentifierToken(&quot;b&quot;),
+  KeywordToken(&quot;FROM&quot;),
+  IdentifierToken(&quot;c&quot;)
+)
+</code></pre>
+<h2 id="pratt-parser"><a class="header" href="#pratt-parser">Pratt Parser</a></h2>
+<p>We are going to hand-code a SQL parser based on the <a href="https://tdop.github.io/">Top Down Operator Precedence</a> paper published by Vaughan R. Pratt in 1973. Although there are other approaches to building SQL parsers such as using Parser Generators and Parser Combinators, I have found Pratt's approach to work well and it results in code that is efficient, easy to comprehend, and easy to debug.</p>
+<p>Here is a bare-bones implementation of a Pratt parser. In my opinion, it is beautiful in its simplicity. Expression parsing is performed by a simple loop that parses a &quot;prefix&quot; expression followed by an optional &quot;infix&quot; expression and keeps doing this until the precedence changes in such a way that the parser recognizes that it has finished parsing the expression. Of course, the implementation of <code>parsePrefix</code> and <code>parseInfix</code> can recursively call back into the <code>parse</code> method and this is where it becomes very powerful.</p>
+<pre><code class="language-kotlin">interface PrattParser {
+
+  /** Parse an expression */
+  fun parse(precedence: Int = 0): SqlExpr? {
+    var expr = parsePrefix() ?: return null
+    while (precedence &lt; nextPrecedence()) {
+      expr = parseInfix(expr, nextPrecedence())
+    }
+    return expr
+  }
+
+  /** Get the precedence of the next token */
+  fun nextPrecedence(): Int
+
+  /** Parse the next prefix expression */
+  fun parsePrefix(): SqlExpr?
+
+  /** Parse the next infix expression */
+  fun parseInfix(left: SqlExpr, precedence: Int): SqlExpr
+
+}
+</code></pre>
+<p>This interface refers to a new <code>SqlExpr</code> class which will be our representation of a parsed expression and will largely be a one to one mapping to the expressions defined in the logical plan but for binary expressions we can use a more generic structure where the operator is a string rather than create separate data structures for all the different binary expressions that we will support.</p>
+<p>Here are some examples of <code>SqlExpr</code> implementations.</p>
+<pre><code class="language-kotlin">/** SQL Expression */
+interface SqlExpr
+
+/** Simple SQL identifier such as a table or column name */
+data class SqlIdentifier(val id: String) : SqlExpr {
+  override fun toString() = id
+}
+
+/** Binary expression */
+data class SqlBinaryExpr(val l: SqlExpr, val op: String, val r: SqlExpr) : SqlExpr {
+  override fun toString(): String = &quot;$l $op $r&quot;
+}
+
+/** SQL literal string */
+data class SqlString(val value: String) : SqlExpr {
+  override fun toString() = &quot;'$value'&quot;
+}
+</code></pre>
+<p>With these classes in place it is possible to represent the expression <code>foo = 'bar'</code> with the following code.</p>
+<pre><code class="language-kotlin">val sqlExpr = SqlBinaryExpr(SqlIdentifier(&quot;foo&quot;), &quot;=&quot;, SqlString(&quot;bar&quot;))
+</code></pre>
+<h2 id="parsing-sql-expressions"><a class="header" href="#parsing-sql-expressions">Parsing SQL Expressions</a></h2>
+<p>Let's walk through this approach for parsing a simple math expression such as <code>1 + 2 * 3</code>. This expression consists of the following tokens.</p>
+<pre><code class="language-kotlin">listOf(
+  LiteralLongToken(&quot;1&quot;),
+  OperatorToken(&quot;+&quot;),
+  LiteralLongToken(&quot;2&quot;),
+  OperatorToken(&quot;*&quot;),
+  LiteralLongToken(&quot;3&quot;)
+)
+</code></pre>
+<p>We need to create an implementation of the <code>PrattParser</code> trait and pass the tokens into the constructor. The tokens are wrapped in a <code>TokenStream</code> class that provides some convenience methods such as <code>next</code> for consuming the next token, and <code>peek</code> for when we want to look ahead without consuming a token.</p>
+<pre><code class="language-kotlin">class SqlParser(val tokens: TokenStream) : PrattParser {
+}
+</code></pre>
+<p>Implementing the <code>nextPrecedence</code> method is simple because we only have a small number of tokens that have any precedence here and we need to have the multiplication and division operators have higher precedence than the addition and subtraction operator. Note that the specific numbers returned by this method are not important since they are just used for comparisons. A good reference for operator precedence can be found in the <a href="https://www.postgresql.org/docs/7.2/sql-precedence.html">PostgreSQL documentation</a>.</p>
+<pre><code class="language-kotlin">override fun nextPrecedence(): Int {
+  val token = tokens.peek()
+  return when (token) {
+    is OperatorToken -&gt; {
+      when (token.s) {
+        &quot;+&quot;, &quot;-&quot; -&gt; 50
+        &quot;*&quot;, &quot;/&quot; -&gt; 60
+        else -&gt; 0
+      }
+    }
+    else -&gt; 0
+  }
+}
+</code></pre>
+<p>The prefix parser just needs to know how to parse literal numeric values.</p>
+<pre><code class="language-kotlin">override fun parsePrefix(): SqlExpr? {
+  val token = tokens.next() ?: return null
+  return when (token) {
+    is LiteralLongToken -&gt; SqlLong(token.s.toLong())
+    else -&gt; throw IllegalStateException(&quot;Unexpected token $token&quot;)
+  }
+}
+</code></pre>
+<p>The infix parser just needs to know how to parse operators. Note that after parsing an operator, this method recursively calls back into the top level <code>parse</code> method to parse the expression following the operator (the right-hand side of the binary expression).</p>
+<pre><code class="language-kotlin">override fun parseInfix(left: SqlExpr, precedence: Int): SqlExpr {
+  val token = tokens.peek()
+  return when (token) {
+    is OperatorToken -&gt; {
+      tokens.next()
+      SqlBinaryExpr(left, token.s, parse(precedence) ?:
+                    throw SQLException(&quot;Error parsing infix&quot;))
+    }
+    else -&gt; throw IllegalStateException(&quot;Unexpected infix token $token&quot;)
+  }
+}
+</code></pre>
+<p>The precedence logic can be demonstrated by parsing the math expressions <code>1 + 2 * 3</code> and <code>1 * 2 + 3</code> which should be parsed as <code>1 + (2 * 3)</code> and<code> (1 * 2) + 3</code> respectively.</p>
+<p><em>Example: Parsing <code>1 + 2 _ 3</code></em></p>
+<p>These are the tokens along with their precedence values.</p>
+<pre><code>Tokens:      [1]  [+]  [2]  [*]  [3]
+Precedence:  [0] [50]  [0] [60]  [0]
+</code></pre>
+<p>The final result correctly represents the expression as <code>1 + (2 * 3)</code>.</p>
+<pre><code class="language-kotlin">SqlBinaryExpr(
+    SqlLong(1),
+    &quot;+&quot;,
+    SqlBinaryExpr(SqlLong(2), &quot;*&quot;, SqlLong(3))
+)
+</code></pre>
+<p><em>Example: Parsing <code>1 _ 2 + 3</code></em></p>
+<pre><code>Tokens:      [1]  [*]  [2]  [+]  [3]
+Precedence:  [0] [60]  [0] [50]  [0]
+</code></pre>
+<p>The final result correctly represents the expression as <code>(1 * 2) + 3</code>.</p>
+<pre><code class="language-kotlin">SqlBinaryExpr(
+    SqlBinaryExpr(SqlLong(1), &quot;*&quot;, SqlLong(2)),
+    &quot;+&quot;,
+    SqlLong(3)
+)
+</code></pre>
+<h2 id="parsing-a-select-statement"><a class="header" href="#parsing-a-select-statement">Parsing a SELECT statement</a></h2>
+<p>Now that we have the ability to parse some simple expressions, the next step is to extend the parser to support parsing a SELECT statement into a concrete syntax tree (CST). Note that with other approaches to parsing such as using a parser generator like ANTLR there is an intermediate stage known as an Abstract Syntax Tree (AST) which then needs to be translated to a Concrete Syntax Tree but with the Pratt Parser approach we go directly from tokens to the CST.</p>
+<p>Here is an example CST that can represent a simple single-table query with a projection and selection. This will be extended to support more complex queries in later chapters.</p>
+<pre><code class="language-kotlin">data class SqlSelect(
+    val projection: List&lt;SqlExpr&gt;,
+    val selection: SqlExpr,
+    val tableName: String) : SqlRelation
+</code></pre>
+<h2 id="sql-query-planner"><a class="header" href="#sql-query-planner">SQL Query Planner</a></h2>
+<p>The SQL Query Planner translates the SQL Query Tree into a Logical Plan. This turns out to be a much harder problem than translating a logical plan to a physical plan due to the flexibility of the SQL language. For example, consider the following simple query.</p>
+<pre><code class="language-sql">SELECT id, first_name, last_name, salary/12 AS monthly_salary
+FROM employee
+WHERE state = 'CO' AND monthly_salary &gt; 1000
+</code></pre>
+<p>Although this is intuitive to a human reading the query, the selection part of the query (the <code>WHERE</code> clause) refers to one expression (<code>state</code>) that is not included in the output of the projection so clearly needs to be applied before the projection but also refers to another expression (<code>salary/12 AS monthly_salary</code>) which is only available after the projection is applied. We will face similar issues with the <code>GROUP BY</code>, <code>HAVING</code>, and <code>ORDER BY</code> clauses.</p>
+<p>There are multiple solutions to this problem. One approach would be to translate this query to the following logical plan, splitting the selection expression into two steps, one before and one after the projection. However, this is only possible because the selection expression is a conjunctive predicate (the expression is true only if all parts are true) and this approach might not be possible for more complex expressions. If the expression had been <code>state = 'CO' OR monthly_salary &gt; 1000</code> then we could not do this.</p>
+<pre><code>Filter: #monthly_salary &gt; 1000
+  Projection: #id, #first_name, #last_name, #salary/12 AS monthly_salary
+    Filter: #state = 'CO'
+      Scan: table=employee
+</code></pre>
+<p>A simpler and more generic approach would be to add all the required expressions to the projection so that the selection can be applied after the projection, and then remove any columns that were added by wrapping the output in another projection.</p>
+<pre><code>Projection: #id, #first_name, #last_name, #monthly_salary
+  Filter: #state = 'CO' AND #monthly_salary &gt; 1000
+    Projection: #id, #first_name, #last_name, #salary/12 AS monthly_salary, #state
+      Scan: table=employee
+</code></pre>
+<p>It is worth noting that we will build a &quot;Predicate Push Down&quot; query optimizer rule in a later chapter that will be able to optimize this plan and push the <code>state = 'CO'</code> part of the predicate further down in the plan so that it is before the projection.</p>
+<h2 id="translating-sql-expressions"><a class="header" href="#translating-sql-expressions">Translating SQL Expressions</a></h2>
+<p>Translating SQL expressions to logical expressions is fairly simple, as demonstrated in this example code.</p>
+<pre><code class="language-kotlin">private fun createLogicalExpr(expr: SqlExpr, input: DataFrame) : LogicalExpr {
+  return when (expr) {
+    is SqlIdentifier -&gt; Column(expr.id)
+    is SqlAlias -&gt; Alias(createLogicalExpr(expr.expr, input), expr.alias.id)
+    is SqlString -&gt; LiteralString(expr.value)
+    is SqlLong -&gt; LiteralLong(expr.value)
+    is SqlDouble -&gt; LiteralDouble(expr.value)
+    is SqlBinaryExpr -&gt; {
+      val l = createLogicalExpr(expr.l, input)
+      val r = createLogicalExpr(expr.r, input)
+      when(expr.op) {
+        // comparison operators
+        &quot;=&quot; -&gt; Eq(l, r)
+        &quot;!=&quot; -&gt; Neq(l, r)
+        &quot;&gt;&quot; -&gt; Gt(l, r)
+        &quot;&gt;=&quot; -&gt; GtEq(l, r)
+        &quot;&lt;&quot; -&gt; Lt(l, r)
+        &quot;&lt;=&quot; -&gt; LtEq(l, r)
+        // boolean operators
+        &quot;AND&quot; -&gt; And(l, r)
+        &quot;OR&quot; -&gt; Or(l, r)
+        // math operators
+        &quot;+&quot; -&gt; Add(l, r)
+        &quot;-&quot; -&gt; Subtract(l, r)
+        &quot;*&quot; -&gt; Multiply(l, r)
+        &quot;/&quot; -&gt; Divide(l, r)
+        &quot;%&quot; -&gt; Modulus(l, r)
+        else -&gt; throw SQLException(&quot;Invalid operator ${expr.op}&quot;)
+      }
+    }
+
+    else -&gt; throw new UnsupportedOperationException()
+  }
+}
+</code></pre>
+<h2 id="planning-select"><a class="header" href="#planning-select">Planning SELECT</a></h2>
+<p>If we only wanted to support the use case where all columns referenced in the selection also exist in the projection we could get away with some very simple logic to build the query plan.</p>
+<pre><code class="language-kotlin">fun createDataFrame(select: SqlSelect, tables: Map&lt;String, DataFrame&gt;) : DataFrame {
+
+  // get a reference to the data source
+  var df = tables[select.tableName] ?:
+      throw SQLException(&quot;No table named '${select.tableName}'&quot;)
+
+  val projectionExpr = select.projection.map { createLogicalExpr(it, df) }
+
+  if (select.selection == null) {
+    // apply projection
+    return df.select(projectionExpr)
+  }
+
+  // apply projection then wrap in a selection (filter)
+  return df.select(projectionExpr)
+           .filter(createLogicalExpr(select.selection, df))
+}
+</code></pre>
+<p>However, because the selection could reference both inputs to the projections and outputs from the projection we need to create a more complex plan with an intermediate projection. The first step is to determine which columns are references by the selection filter expression. To do this we will use the visitor pattern to walk the expression tree and build a mutable set of column names.</p>
+<p>Here is the utility method we will use to walk the expression tree.</p>
+<pre><code class="language-kotlin">private fun visit(expr: LogicalExpr, accumulator: MutableSet&lt;String&gt;) {
+  when (expr) {
+    is Column -&gt; accumulator.add(expr.name)
+    is Alias -&gt; visit(expr.expr, accumulator)
+    is BinaryExpr -&gt; {
+      visit(expr.l, accumulator)
+      visit(expr.r, accumulator)
+     }
+  }
+}
+</code></pre>
+<p>With this in place we can now write the following code to convert a SELECT statement into a valid logical plan. This code sample is not perfect and probably contains some bugs for edge cases where there are name clashes between columns in the data source and aliased expressions but we will ignore this for the moment to keep the code simple.</p>
+<pre><code class="language-kotlin">fun createDataFrame(select: SqlSelect, tables: Map&lt;String, DataFrame&gt;) : DataFrame {
+
+  // get a reference to the data source
+  var df = tables[select.tableName] ?:
+    throw SQLException(&quot;No table named '${select.tableName}'&quot;)
+
+  // create the logical expressions for the projection
+  val projectionExpr = select.projection.map { createLogicalExpr(it, df) }
+
+  if (select.selection == null) {
+    // if there is no selection then we can just return the projection
+    return df.select(projectionExpr)
+  }
+
+  // create the logical expression to represent the selection
+  val filterExpr = createLogicalExpr(select.selection, df)
+
+  // get a list of columns references in the projection expression
+  val columnsInProjection = projectionExpr
+    .map { it.toField(df.logicalPlan()).name}
+    .toSet()
+
+  // get a list of columns referenced in the selection expression
+  val columnNames = mutableSetOf&lt;String&gt;()
+  visit(filterExpr, columnNames)
+
+  // determine if the selection references any columns not in the projection
+  val missing = columnNames - columnsInProjection
+
+  // if the selection only references outputs from the projection we can
+  // simply apply the filter expression to the DataFrame representing
+  // the projection
+  if (missing.size == 0) {
+    return df.select(projectionExpr)
+             .filter(filterExpr)
+  }
+
+  // because the selection references some columns that are not in the
+  // projection output we need to create an interim projection that has
+  // the additional columns and then we need to remove them after the
+  // selection has been applied
+  return df.select(projectionExpr + missing.map { Column(it) })
+           .filter(filterExpr)
+           .select(projectionExpr.map {
+              Column(it.toField(df.logicalPlan()).name)
+            })
+}
+</code></pre>
+<h2 id="planning-for-aggregate-queries"><a class="header" href="#planning-for-aggregate-queries">Planning for Aggregate Queries</a></h2>
+<p>As you can see, the SQL query planner is relatively complex and the code for parsing aggregate queries is quite involved. If you are interested in learning more, please refer to the source code.</p>
+<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="10-execution.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="12-parallel-query.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="10-execution.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="12-parallel-query.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

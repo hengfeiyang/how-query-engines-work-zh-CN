@@ -1,0 +1,326 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Parallel Query Execution - How Query Engines Work 中文版</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">译者注</a></li><li class="chapter-item expanded "><a href="00-acknowledgments.html"><strong aria-hidden="true">1.</strong> Acknowledgments</a></li><li class="chapter-item expanded "><a href="00-introduction.html"><strong aria-hidden="true">2.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01-what-is-a-query-engine.html"><strong aria-hidden="true">3.</strong> What Is a Query Engine?</a></li><li class="chapter-item expanded "><a href="02-apache-arrow.html"><strong aria-hidden="true">4.</strong> Apache Arrow</a></li><li class="chapter-item expanded "><a href="03-type-system.html"><strong aria-hidden="true">5.</strong> Type System</a></li><li class="chapter-item expanded "><a href="04-data-sources.html"><strong aria-hidden="true">6.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="05-logical-plan.html"><strong aria-hidden="true">7.</strong> Logical Plans</a></li><li class="chapter-item expanded "><a href="06-dataframe.html"><strong aria-hidden="true">8.</strong> Dataframes</a></li><li class="chapter-item expanded "><a href="07-physical-plan.html"><strong aria-hidden="true">9.</strong> Physical Plans</a></li><li class="chapter-item expanded "><a href="08-query-planner.html"><strong aria-hidden="true">10.</strong> Query Planning</a></li><li class="chapter-item expanded "><a href="09-optimizations.html"><strong aria-hidden="true">11.</strong> Query Optimizers</a></li><li class="chapter-item expanded "><a href="10-execution.html"><strong aria-hidden="true">12.</strong> Query Execution</a></li><li class="chapter-item expanded "><a href="11-sql-support.html"><strong aria-hidden="true">13.</strong> SQL Support</a></li><li class="chapter-item expanded "><a href="12-parallel-query.html" class="active"><strong aria-hidden="true">14.</strong> Parallel Query Execution</a></li><li class="chapter-item expanded "><a href="13-distributed-query.html"><strong aria-hidden="true">15.</strong> Distributed Query Execution</a></li><li class="chapter-item expanded "><a href="14-testing.html"><strong aria-hidden="true">16.</strong> Testing</a></li><li class="chapter-item expanded "><a href="15-benchmarks.html"><strong aria-hidden="true">17.</strong> Benchmarks</a></li><li class="chapter-item expanded "><a href="16-further-resources.html"><strong aria-hidden="true">18.</strong> Further Resources</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">How Query Engines Work 中文版</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="parallel-query-execution"><a class="header" href="#parallel-query-execution">Parallel Query Execution</a></h1>
+<p>So far, we have been using a single thread to execute queries against individual files. This approach is not very scalable, because queries will take longer to run with larger files or with multiple files. The next step is to implement distributed query execution so that query execution can utilize multiple CPU cores and multiple servers.</p>
+<p>The simplest form of distributed query execution is parallel query execution utilizing multiple CPU cores on a single node using threads.</p>
+<p>The NYC taxi data set is already conveniently partitioned because there is one CSV file for each month of each year, meaning that there are twelve partitions for the 2019 data set, for example. The most straightforward approach to parallel query execution would be to use one thread per partition to execute the same query in parallel and then combine the results. Suppose this code is running on a computer with six CPU cores with hyper-threading support. In that case, these twelve queries should execute in the same elapsed time as running one of the queries on a single thread, assuming that each month has a similar amount of data.</p>
+<p>Here is an example of running an aggregate SQL query in parallel across twelve partitions. This example is implemented using Kotlin coroutines, rather than using threads directly.</p>
+<p>The source code for this example can be found at <code>jvm/examples/src/main/kotlin/ParallelQuery.kt</code> in the KQuery GitHub repository.</p>
+<p>Let us start with the single-threaded code for running one query against one partition.</p>
+<pre><code class="language-kotlin">fun executeQuery(path: String, month: Int, sql: String): List&lt;RecordBatch&gt; {
+  val monthStr = String.format(&quot;%02d&quot;, month);
+  val filename = &quot;$path/yellow_tripdata_2019-$monthStr.csv&quot;
+  val ctx = ExecutionContext()
+  ctx.registerCsv(&quot;tripdata&quot;, filename)
+  val df = ctx.sql(sql)
+  return ctx.execute(df).toList()
+}
+</code></pre>
+<p>With this in place, we can now write the following code to run this query in parallel across each of the twelve partitions of data.</p>
+<pre><code class="language-kotlin">val start = System.currentTimeMillis()
+val deferred = (1..12).map {month -&gt;
+  GlobalScope.async {
+
+    val sql = &quot;SELECT passenger_count, &quot; +
+        &quot;MAX(CAST(fare_amount AS double)) AS max_fare &quot; +
+        &quot;FROM tripdata &quot; +
+        &quot;GROUP BY passenger_count&quot;
+
+    val start = System.currentTimeMillis()
+    val result = executeQuery(path, month, sql)
+    val duration = System.currentTimeMillis() - start
+    println(&quot;Query against month $month took $duration ms&quot;)
+    result
+  }
+}
+val results: List&lt;RecordBatch&gt; = runBlocking {
+  deferred.flatMap { it.await() }
+}
+val duration = System.currentTimeMillis() - start
+println(&quot;Collected ${results.size} batches in $duration ms&quot;)
+</code></pre>
+<p>Here is the output from this example, running on a desktop computer with <em>24 cores</em>.</p>
+<pre><code>Query against month 8 took 17074 ms
+Query against month 9 took 18976 ms
+Query against month 7 took 20010 ms
+Query against month 2 took 21417 ms
+Query against month 11 took 21521 ms
+Query against month 12 took 22082 ms
+Query against month 6 took 23669 ms
+Query against month 1 took 23735 ms
+Query against month 10 took 23739 ms
+Query against month 3 took 24048 ms
+Query against month 5 took 24103 ms
+Query against month 4 took 25439 ms
+Collected 12 batches in 25505 ms
+</code></pre>
+<p>As you can see, the total duration was around the same time as the slowest query.</p>
+<p>Although we have successfully executed the aggregate query against the partitions, our result is a list of batches of data with duplicate values. For example, there will most likely be a result for <code>passenger_count=1</code> from each of the partitions.</p>
+<h2 id="combining-results"><a class="header" href="#combining-results">Combining Results</a></h2>
+<p>For simple queries consisting of projection and selection operators, the results of the parallel queries can be combined (similar to a SQL <code>UNION ALL</code> operation), and no further processing is required. More complex queries involving aggregates, sorts, or joins will require a secondary query to be run on the results of the parallel queries to combine the results. The terms &quot;map&quot; and &quot;reduce&quot; are often used to explain this two-step process. The &quot;map&quot; step refers to running one query in parallel across the partitions, and the &quot;reduce&quot; step refers to combining the results into a single result.</p>
+<p>For this particular example, it is now necessary to run a secondary aggregation query almost identical to the aggregate query executed against the partitions. One difference is that the second query may need to apply different aggregate functions. For the aggregate functions <code>min</code>, <code>max</code>, and <code>sum</code>, the same operation is used in the map and reduce steps, to get the min of the min or the sum of the sums. For the count expression, we do not want the count of the counts. We want to see the sum of the counts instead.</p>
+<pre><code class="language-kotlin">val sql = &quot;SELECT passenger_count, &quot; +
+        &quot;MAX(max_fare) &quot; +
+        &quot;FROM tripdata &quot; +
+        &quot;GROUP BY passenger_count&quot;
+
+val ctx = ExecutionContext()
+ctx.registerDataSource(&quot;tripdata&quot;, InMemoryDataSource(results.first().schema, results))
+val df = ctx.sql(sql)
+ctx.execute(df).forEach { println(it) }
+</code></pre>
+<p>This produces the final result set:</p>
+<pre><code>1,671123.14
+2,1196.35
+3,350.0
+4,500.0
+5,760.0
+6,262.5
+7,80.52
+8,89.0
+9,97.5
+0,90000.0
+</code></pre>
+<h2 id="smarter-partitioning"><a class="header" href="#smarter-partitioning">Smarter Partitioning</a></h2>
+<p>Although the strategy of using one thread per file worked well in this example, it does not work as a general-purpose approach to partitioning. If a data source has thousands of small partitions, starting one thread per partition would be inefficient. A better approach would be for the query planner to decide how to share the available data between a specified number of worker threads (or executors).</p>
+<p>Some file formats already have a natural partitioning scheme within them. For example, Apache Parquet files consist of multiple &quot;row groups&quot; containing batches of columnar data. A query planner could inspect the available Parquet files, build a list of row groups and then schedule reading these row groups across a fixed number of threads or executors.</p>
+<p>It is even possible to apply this technique to unstructured files such as CSV files, but this is not trivial. It is easy to inspect the file size and break the file into equal-sized chunks, but a record could likely span two chunks, so it is necessary to read backward or forwards from a boundary to find the start or end of the record. It is insufficient to look for a newline character because these often appear within records and are also used to delimit records. It is common practice to convert CSV files into a structured format such as Parquet early on in a processing pipeline to improve the efficiency of subsequent processing.</p>
+<h2 id="partition-keys"><a class="header" href="#partition-keys">Partition Keys</a></h2>
+<p>One solution to this problem is to place files in directories and use directory names consisting of key-value pairs to specify the contents.</p>
+<p>For example, we could organize the files as follows:</p>
+<pre><code>/mnt/nyxtaxi/csv/year=2019/month=1/tripdata.csv
+/mnt/nyxtaxi/csv/year=2019/month=2/tripdata.csv
+...
+/mnt/nyxtaxi/csv/year=2019/month=12/tripdata.csv
+</code></pre>
+<p>Given this structure, the query planner could now implement a form of &quot;predicate push down&quot; to limit the number of partitions included in the physical query plan. This approach is often referred to as &quot;partition pruning&quot;.</p>
+<h2 id="parallel-joins"><a class="header" href="#parallel-joins">Parallel Joins</a></h2>
+<p>When performing an inner join with a single thread, a simple approach is to load one side of the join into memory and then scan the other side, performing lookups against the data stored in memory. This classic Hash Join algorithm is efficient if one side of the join can fit into memory.</p>
+<p>The parallel version of this is known as a Partitioned Hash Join or Parallel Hash Join. It involves partitioning both inputs based on the join keys and performing a classic Hash Join on each pair of input partitions.</p>
+<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="11-sql-support.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="13-distributed-query.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="11-sql-support.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="13-distributed-query.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

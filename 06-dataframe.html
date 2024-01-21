@@ -1,0 +1,374 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Dataframes - How Query Engines Work 中文版</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">译者注</a></li><li class="chapter-item expanded "><a href="00-acknowledgments.html"><strong aria-hidden="true">1.</strong> Acknowledgments</a></li><li class="chapter-item expanded "><a href="00-introduction.html"><strong aria-hidden="true">2.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01-what-is-a-query-engine.html"><strong aria-hidden="true">3.</strong> What Is a Query Engine?</a></li><li class="chapter-item expanded "><a href="02-apache-arrow.html"><strong aria-hidden="true">4.</strong> Apache Arrow</a></li><li class="chapter-item expanded "><a href="03-type-system.html"><strong aria-hidden="true">5.</strong> Type System</a></li><li class="chapter-item expanded "><a href="04-data-sources.html"><strong aria-hidden="true">6.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="05-logical-plan.html"><strong aria-hidden="true">7.</strong> Logical Plans</a></li><li class="chapter-item expanded "><a href="06-dataframe.html" class="active"><strong aria-hidden="true">8.</strong> Dataframes</a></li><li class="chapter-item expanded "><a href="07-physical-plan.html"><strong aria-hidden="true">9.</strong> Physical Plans</a></li><li class="chapter-item expanded "><a href="08-query-planner.html"><strong aria-hidden="true">10.</strong> Query Planning</a></li><li class="chapter-item expanded "><a href="09-optimizations.html"><strong aria-hidden="true">11.</strong> Query Optimizers</a></li><li class="chapter-item expanded "><a href="10-execution.html"><strong aria-hidden="true">12.</strong> Query Execution</a></li><li class="chapter-item expanded "><a href="11-sql-support.html"><strong aria-hidden="true">13.</strong> SQL Support</a></li><li class="chapter-item expanded "><a href="12-parallel-query.html"><strong aria-hidden="true">14.</strong> Parallel Query Execution</a></li><li class="chapter-item expanded "><a href="13-distributed-query.html"><strong aria-hidden="true">15.</strong> Distributed Query Execution</a></li><li class="chapter-item expanded "><a href="14-testing.html"><strong aria-hidden="true">16.</strong> Testing</a></li><li class="chapter-item expanded "><a href="15-benchmarks.html"><strong aria-hidden="true">17.</strong> Benchmarks</a></li><li class="chapter-item expanded "><a href="16-further-resources.html"><strong aria-hidden="true">18.</strong> Further Resources</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">How Query Engines Work 中文版</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="building-logical-plans"><a class="header" href="#building-logical-plans">Building Logical Plans</a></h1>
+<p><em>The source code discussed in this chapter can be found in the <code>dataframe</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
+<h2 id="building-logical-plans-the-hard-way"><a class="header" href="#building-logical-plans-the-hard-way">Building Logical Plans The Hard Way</a></h2>
+<p>Now that we have defined classes for a subset of logical plans, we can combine them programmatically.</p>
+<p>Here is some verbose code for building a plan for the query <code>SELECT * FROM employee WHERE state = 'CO'</code> against a CSV file containing the columns <code>id, first_name, last_name, state, job_title, salary</code>.</p>
+<pre><code class="language-kotlin">// create a plan to represent the data source
+val csv = CsvDataSource(&quot;employee.csv&quot;)
+
+// create a plan to represent the scan of the data source (FROM)
+val scan = Scan(&quot;employee&quot;, csv, listOf())
+
+// create a plan to represent the selection (WHERE)
+val filterExpr = Eq(Column(&quot;state&quot;), LiteralString(&quot;CO&quot;))
+val selection = Selection(scan, filterExpr)
+
+// create a plan to represent the projection (SELECT)
+val projectionList = listOf(Column(&quot;id&quot;),
+                            Column(&quot;first_name&quot;),
+                            Column(&quot;last_name&quot;),
+                            Column(&quot;state&quot;),
+                            Column(&quot;salary&quot;))
+val plan = Projection(selection, projectionList)
+
+// print the plan
+println(format(plan))
+</code></pre>
+<p>This prints the following plan:</p>
+<pre><code>Projection: #id, #first_name, #last_name, #state, #salary
+    Filter: #state = 'CO'
+        Scan: employee; projection=None
+</code></pre>
+<p>The same code can also be written more concisely like this:</p>
+<pre><code class="language-kotlin">val plan = Projection(
+  Selection(
+    Scan(&quot;employee&quot;, CsvDataSource(&quot;employee.csv&quot;), listOf()),
+    Eq(Column(3), LiteralString(&quot;CO&quot;))
+  ),
+  listOf(Column(&quot;id&quot;),
+         Column(&quot;first_name&quot;),
+         Column(&quot;last_name&quot;),
+         Column(&quot;state&quot;),
+         Column(&quot;salary&quot;))
+)
+println(format(plan))
+</code></pre>
+<p>Although this is more concise, it is also harder to interpret, so it would be nice to have a more elegant way to create logical plans. This is where a DataFrame interface can help.</p>
+<h2 id="building-logical-plans-using-dataframes"><a class="header" href="#building-logical-plans-using-dataframes">Building Logical Plans using DataFrames</a></h2>
+<p>Implementing a DataFrame style API allows us to build logical query plans in a much more user-friendly way. A DataFrame is just an abstraction around a logical query plan and has methods to perform transformations and actions. It is similar to a fluent-style builder API.</p>
+<p>Here is a minimal starting point for a DataFrame interface that allows us to apply projections and selections to an existing DataFrame.</p>
+<pre><code class="language-kotlin">interface DataFrame {
+
+  /** Apply a projection */
+  fun project(expr: List&lt;LogicalExpr&gt;): DataFrame
+
+  /** Apply a filter */
+  fun filter(expr: LogicalExpr): DataFrame
+
+  /** Aggregate */
+  fun aggregate(groupBy: List&lt;LogicalExpr&gt;,
+                aggregateExpr: List&lt;AggregateExpr&gt;): DataFrame
+
+  /** Returns the schema of the data that will be produced by this DataFrame. */
+  fun schema(): Schema
+
+  /** Get the logical plan */
+  fun logicalPlan() : LogicalPlan
+
+}
+</code></pre>
+<p>Here is the implementation of this interface.</p>
+<pre><code class="language-kotlin">class DataFrameImpl(private val plan: LogicalPlan) : DataFrame {
+
+  override fun project(expr: List&lt;LogicalExpr&gt;): DataFrame {
+    return DataFrameImpl(Projection(plan, expr))
+  }
+
+  override fun filter(expr: LogicalExpr): DataFrame {
+    return DataFrameImpl(Selection(plan, expr))
+  }
+
+  override fun aggregate(groupBy: List&lt;LogicalExpr&gt;,
+                         aggregateExpr: List&lt;AggregateExpr&gt;): DataFrame {
+    return DataFrameImpl(Aggregate(plan, groupBy, aggregateExpr))
+  }
+
+  override fun schema(): Schema {
+    return plan.schema()
+  }
+
+  override fun logicalPlan(): LogicalPlan {
+    return plan
+  }
+
+}
+</code></pre>
+<p>Before we can apply a projection or selection, we need a way to create an initial DataFrame that represents an underlying data source. This is usually obtained through an execution context.</p>
+<p>Here is a simple starting point for an execution context that we will enhance later.</p>
+<pre><code class="language-kotlin">class ExecutionContext {
+
+  fun csv(filename: String): DataFrame {
+    return DataFrameImpl(Scan(filename, CsvDataSource(filename), listOf()))
+  }
+
+  fun parquet(filename: String): DataFrame {
+    return DataFrameImpl(Scan(filename, ParquetDataSource(filename), listOf()))
+  }
+}
+</code></pre>
+<p>With this groundwork in place, we can now create a logical query plan using the context and the DataFrame API.</p>
+<pre><code class="language-kotlin">val ctx = ExecutionContext()
+
+val plan = ctx.csv(&quot;employee.csv&quot;)
+              .filter(Eq(Column(&quot;state&quot;), LiteralString(&quot;CO&quot;)))
+              .select(listOf(Column(&quot;id&quot;),
+                             Column(&quot;first_name&quot;),
+                             Column(&quot;last_name&quot;),
+                             Column(&quot;state&quot;),
+                             Column(&quot;salary&quot;)))
+</code></pre>
+<p>This is much cleaner and more intuitive, but we can go a step further and add some convenience methods to make this a little more comprehensible. This is specific to Kotlin, but other languages have similar concepts.</p>
+<p>We can create some convenience methods for creating the supported expression objects.</p>
+<pre><code class="language-kotlin">fun col(name: String) = Column(name)
+fun lit(value: String) = LiteralString(value)
+fun lit(value: Long) = LiteralLong(value)
+fun lit(value: Double) = LiteralDouble(value)
+</code></pre>
+<p>We can also define infix operators on the <code>LogicalExpr</code> interface for building binary expressions.</p>
+<pre><code class="language-kotlin">infix fun LogicalExpr.eq(rhs: LogicalExpr): LogicalExpr { return Eq(this, rhs) }
+infix fun LogicalExpr.neq(rhs: LogicalExpr): LogicalExpr { return Neq(this, rhs) }
+infix fun LogicalExpr.gt(rhs: LogicalExpr): LogicalExpr { return Gt(this, rhs) }
+infix fun LogicalExpr.gteq(rhs: LogicalExpr): LogicalExpr { return GtEq(this, rhs) }
+infix fun LogicalExpr.lt(rhs: LogicalExpr): LogicalExpr { return Lt(this, rhs) }
+infix fun LogicalExpr.lteq(rhs: LogicalExpr): LogicalExpr { return LtEq(this, rhs) }
+</code></pre>
+<p>With these convenience methods in place, we can now write expressive code to build our logical query plan.</p>
+<pre><code class="language-kotlin">val df = ctx.csv(employeeCsv)
+   .filter(col(&quot;state&quot;) eq lit(&quot;CO&quot;))
+   .select(listOf(
+       col(&quot;id&quot;),
+       col(&quot;first_name&quot;),
+       col(&quot;last_name&quot;),
+       col(&quot;salary&quot;),
+       (col(&quot;salary&quot;) mult lit(0.1)) alias &quot;bonus&quot;))
+   .filter(col(&quot;bonus&quot;) gt lit(1000))
+</code></pre>
+<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="05-logical-plan.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="07-physical-plan.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="05-logical-plan.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="07-physical-plan.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,392 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Distributed Query Execution - How Query Engines Work 中文版</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">译者注</a></li><li class="chapter-item expanded "><a href="00-acknowledgments.html"><strong aria-hidden="true">1.</strong> Acknowledgments</a></li><li class="chapter-item expanded "><a href="00-introduction.html"><strong aria-hidden="true">2.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01-what-is-a-query-engine.html"><strong aria-hidden="true">3.</strong> What Is a Query Engine?</a></li><li class="chapter-item expanded "><a href="02-apache-arrow.html"><strong aria-hidden="true">4.</strong> Apache Arrow</a></li><li class="chapter-item expanded "><a href="03-type-system.html"><strong aria-hidden="true">5.</strong> Type System</a></li><li class="chapter-item expanded "><a href="04-data-sources.html"><strong aria-hidden="true">6.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="05-logical-plan.html"><strong aria-hidden="true">7.</strong> Logical Plans</a></li><li class="chapter-item expanded "><a href="06-dataframe.html"><strong aria-hidden="true">8.</strong> Dataframes</a></li><li class="chapter-item expanded "><a href="07-physical-plan.html"><strong aria-hidden="true">9.</strong> Physical Plans</a></li><li class="chapter-item expanded "><a href="08-query-planner.html"><strong aria-hidden="true">10.</strong> Query Planning</a></li><li class="chapter-item expanded "><a href="09-optimizations.html"><strong aria-hidden="true">11.</strong> Query Optimizers</a></li><li class="chapter-item expanded "><a href="10-execution.html"><strong aria-hidden="true">12.</strong> Query Execution</a></li><li class="chapter-item expanded "><a href="11-sql-support.html"><strong aria-hidden="true">13.</strong> SQL Support</a></li><li class="chapter-item expanded "><a href="12-parallel-query.html"><strong aria-hidden="true">14.</strong> Parallel Query Execution</a></li><li class="chapter-item expanded "><a href="13-distributed-query.html" class="active"><strong aria-hidden="true">15.</strong> Distributed Query Execution</a></li><li class="chapter-item expanded "><a href="14-testing.html"><strong aria-hidden="true">16.</strong> Testing</a></li><li class="chapter-item expanded "><a href="15-benchmarks.html"><strong aria-hidden="true">17.</strong> Benchmarks</a></li><li class="chapter-item expanded "><a href="16-further-resources.html"><strong aria-hidden="true">18.</strong> Further Resources</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">How Query Engines Work 中文版</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="distributed-query-execution"><a class="header" href="#distributed-query-execution">Distributed Query Execution</a></h1>
+<p>The previous section on Parallel Query Execution covered some fundamental concepts such as partitioning, which we will build on in this section.</p>
+<p>To somewhat over-simplify the concept of distributed query execution, the goal is to be able to create a physical query plan which defines how work is distributed to a number of &quot;executors&quot; in a cluster. Distributed query plans will typically contain new operators that describe how data is exchanged between executors at various points during query execution.</p>
+<p>In the following sections we will explore how different types of plans are executed in a distributed environment and then discuss building a distributed query scheduler.</p>
+<h2 id="embarrassingly-parallel-operators"><a class="header" href="#embarrassingly-parallel-operators">Embarrassingly Parallel Operators</a></h2>
+<p>Certain operators can run in parallel on partitions of data without any significant overhead when running in a distributed environment. The best examples of these are Projection and Filter. These operators can be applied in parallel to each input partition of the data being operated on and produce a corresponding output partition for each one. These operators do not change the partitioning scheme of the data.</p>
+<p><img src="images/distributed_project_filter.png" alt="distributed project filter" /></p>
+<h2 id="distributed-aggregates"><a class="header" href="#distributed-aggregates">Distributed Aggregates</a></h2>
+<p>Let's use the example SQL query that we used in the previous chapter on Parallel Query Execution and look at the distributed planning implications of an aggregate query.</p>
+<pre><code class="language-sql">SELECT passenger_count, MAX(max_fare)
+FROM tripdata
+GROUP BY passenger_count
+</code></pre>
+<p>We can execute this query in parallel on all partitions of the <code>tripdata</code> table, with each executor in the cluster processing a subset of these partitions. However, we need to then combine all the resulting aggregated data onto a single node and then apply the final aggregate query so that we get a single result set without duplicate grouping keys (<code>passenger_count</code> in this case). Here is one possible logical query plan for representing this. Note the new <code>Exchange</code> operator which represents the exchange of data between executors. The physical plan for the exchange could be implemented by writing intermediate results to shared storage, or perhaps by streaming data directly to other executors.</p>
+<pre><code>HashAggregate: groupBy=[passenger_count], aggr=[MAX(max_fare)]
+  Exchange:
+    HashAggregate: groupBy=[passenger_count], aggr=[MAX(max_fare)]
+      Scan: tripdata.parquet
+</code></pre>
+<p>Here is a diagram showing how this query could be executed in a distributed environment:</p>
+<p><img src="images/distributed_agg.png" alt="distributed agg" /></p>
+<h2 id="distributed-joins"><a class="header" href="#distributed-joins">Distributed Joins</a></h2>
+<p>Joins are often the most expensive operation to perform in a distributed environment. The reason for this is that we need to make sure that we organize the data in such a way that both input relations are partitioned on the join keys. For example, if we joining a <code>customer</code> table to an <code>order</code> table where the join condition is <code>customer.id = order.customer_id</code>, then all the rows in both tables for a specific customer must be processed by the same executor. To achieve this, we have to first repartition both tables on the join keys and write the partitions to disk. Once this has completed then we can perform the join in parallel with one join for each partition. The resulting data will remain partitioned by the join keys. This particular join algorithm is called a partitioned hash join. The process of repartitioning the data is known as performing a &quot;shuffle&quot;.</p>
+<p><img src="images/distributed_join.png" alt="distributed join" /></p>
+<h2 id="distributed-query-scheduling"><a class="header" href="#distributed-query-scheduling">Distributed Query Scheduling</a></h2>
+<p>Distributed query plans are fundamentally different to in-process query plans because we can't just build a tree of operators and start executing them. The query now requires co-ordination across executors which means that we now need to build a scheduler.</p>
+<p>At a high level, the concept of a distributed query scheduler is not complex. The scheduler needs to examine the whole query and break it down into stages that can be executed in isolation (usually in parallel across the executors) and then schedule these stages for execution based on the available resources in the cluster. Once each query stage completes then any subsequent dependent query stages can be scheduled. This process repeats until all query stages have been executed.</p>
+<p>The scheduler could also be responsible for managing the compute resources in the cluster so that extra executors can be started on demand to handle the query load.</p>
+<p>In the remainder of this chapter, we will discuss the following topics, referring to Ballista and the design that is being implemented in that project.</p>
+<ul>
+<li>Producing a distributed query plan</li>
+<li>Serializing query plans and exchanging them with executors</li>
+<li>Exchange intermediate results between executors</li>
+<li>Optimizing distributed queries</li>
+</ul>
+<h2 id="producing-a-distributed-query-plan"><a class="header" href="#producing-a-distributed-query-plan">Producing a Distributed Query Plan</a></h2>
+<p>As we have seen in the previous examples, some operators can run in parallel on input partitions and some operators require data to be repartitioned. These changes in partitioning are key to planning a distributed query. Changes in partitioning within a plan are sometimes called pipeline breakers and these changes in partitioning define the boundaries between query stages.</p>
+<p>We will now use the following SQL query to see how this process works.</p>
+<pre><code class="language-sql">SELECT customer.id, sum(order.amount) as total_amount
+FROM customer JOIN order ON customer.id = order.customer_id
+GROUP BY customer.id
+</code></pre>
+<p>The physical (non-distributed) plan for this query would look something like this:</p>
+<pre><code>Projection: #customer.id, #total_amount
+  HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+    Join: condition=[customer.id = order.customer_id]
+      Scan: customer
+      Scan: order
+</code></pre>
+<p>Assuming that the customer and order tables are not already partitioned on customer id, we will need to schedule execution of the first two query stages to repartition this data. These two query stages can run in parallel.</p>
+<pre><code>Query Stage #1: repartition=[customer.id]
+  Scan: customer
+Query Stage #2: repartition=[order.customer_id]
+  Scan: order
+</code></pre>
+<p>Next, we can schedule the join, which will run in parallel for each partition of the two inputs. The next operator after the join is the aggregate, which is split into two parts; the aggregate that runs in parallel and then the final aggregate that requires a single input partition. We can perform the parallel part of this aggregate in the same query stage as the join because this first aggregate does not care how the data is partitioned. This gives us our third query stage, which can now be scheduled for execution. The output of this query stage remains partitioned by customer id.</p>
+<pre><code>Query Stage #3: repartition=[]
+  HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+    Join: condition=[customer.id = order.customer_id]
+      Query Stage #1
+      Query Stage #2
+</code></pre>
+<p>The final query stage performs the aggregate of the aggregates, reading from all of the partitions from the previous stage.</p>
+<pre><code>Query Stage #4:
+  Projection: #customer.id, #total_amount
+    HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+      QueryStage #3
+</code></pre>
+<p>To recap, here is the full distributed query plan showing the query stages that are introduced when data needs to be repartitioned or exchanged between pipelined operations.</p>
+<pre><code>Query Stage #4:
+  Projection: #customer.id, #total_amount
+    HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+      Query Stage #3: repartition=[]
+        HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+          Join: condition=[customer.id = order.customer_id]
+            Query Stage #1: repartition=[customer.id]
+              Scan: customer
+            Query Stage #2: repartition=[order.customer_id]
+              Scan: order
+</code></pre>
+<h2 id="serializing-a-query-plan"><a class="header" href="#serializing-a-query-plan">Serializing a Query Plan</a></h2>
+<p>The query scheduler needs to send fragments of the overall query plan to executors for execution.</p>
+<p>There are a number of options for serializing a query plan so that it can be passed between processes. Many query engines choose the strategy of using the programming languages native serialization support, which is a suitable choice if there is no requirement to be able to exchange query plans between different programming languages and this is usually the simplest mechanism to implement.</p>
+<p>However, there are advantages in using a serialization format that is programming language-agnostic. Ballista uses Google's <a href="https://developers.google.com/protocol-buffers">Protocol Buffers</a> format to define query plans. The project is typically abbreviated as &quot;protobuf&quot;.</p>
+<p>Here is a subset of the Ballista protocol buffer definition of a query plan.</p>
+<p>Full source code can be found at <code>proto/ballista.proto</code> in the Ballista github repository.</p>
+<pre><code class="language-protobuf">message LogicalPlanNode {
+  LogicalPlanNode input = 1;
+  FileNode file = 10;
+  ProjectionNode projection = 20;
+  SelectionNode selection = 21;
+  LimitNode limit = 22;
+  AggregateNode aggregate = 23;
+}
+
+message FileNode {
+  string filename = 1;
+  Schema schema = 2;
+  repeated string projection = 3;
+}
+
+message ProjectionNode {
+  repeated LogicalExprNode expr = 1;
+}
+
+message SelectionNode {
+  LogicalExprNode expr = 2;
+}
+
+message AggregateNode {
+  repeated LogicalExprNode group_expr = 1;
+  repeated LogicalExprNode aggr_expr = 2;
+}
+
+message LimitNode {
+  uint32 limit = 1;
+}
+</code></pre>
+<p>The protobuf project provides tools for generating language-specific source code for serializing and de-serializing data.</p>
+<h2 id="serializing-data"><a class="header" href="#serializing-data">Serializing Data</a></h2>
+<p>Data must also be serialized as it is streamed between clients and executors and between executors.</p>
+<p>Apache Arrow provides an IPC (Inter-process Communication) format for exchanging data between processes. Because of the standardized memory layout provided by Arrow, the raw bytes can be transferred directly between memory and an input/output device (disk, network, etc) without the overhead typically associated with serialization. This is effectively a zero copy operation because the data does not have to be transformed from its in-memory format to a separate serialization format.</p>
+<p>However, the metadata about the data, such as the schema (column names and data types) does need to be encoded using <a href="https://google.github.io/flatbuffers/">Google Flatbuffers</a>. This metadata is small and is typically serialized once per result set or per batch so the overhead is small.</p>
+<p>Another advantage of using Arrow is that it provides very efficient exchange of data between different programming languages.</p>
+<p>Apache Arrow IPC defines the data encoding format but not the mechanism for exchanging it. Arrow IPC could be used to transfer data from a JVM language to C or Rust via JNI for example.</p>
+<h2 id="choosing-a-protocol"><a class="header" href="#choosing-a-protocol">Choosing a Protocol</a></h2>
+<p>Now that we have chosen serialization formats for query plans and data, the next question is how do we exchange this data between distributed processes.</p>
+<p>Apache Arrow provides a <a href="https://arrow.apache.org/blog/2019/10/13/introducing-arrow-flight/">Flight protocol</a> which is intended for this exact purpose. Flight is a new general-purpose client-server framework to simplify high performance transport of large datasets over network interfaces.</p>
+<p>The Arrow Flight libraries provide a development framework for implementing a service that can send and receive data streams. A Flight server supports several basic kinds of requests:</p>
+<ul>
+<li><strong>Handshake</strong>: a simple request to determine whether the client is authorized and, in some cases, to establish an implementation-defined session token to use for future requests</li>
+<li><strong>ListFlights</strong>: return a list of available data streams</li>
+<li><strong>GetSchema</strong>: return the schema for a data stream</li>
+<li><strong>GetFlightInfo</strong>: return an “access plan” for a dataset of interest, possibly requiring consuming multiple data streams. This request can accept custom serialized commands containing, for example, your specific application parameters.</li>
+<li><strong>DoGet</strong>: send a data stream to a client</li>
+<li><strong>DoPut</strong>: receive a data stream from a client</li>
+<li><strong>DoAction</strong>: perform an implementation-specific action and return any results, i.e. a generalized function call</li>
+<li><strong>ListActions</strong>: return a list of available action types</li>
+</ul>
+<p>The <code>GetFlightInfo</code> method could be used to compile a query plan and return the necessary information for receiving the results, for example, followed by calls to <code>DoGet</code> on each executor to start receiving the results from the query.</p>
+<h2 id="streaming"><a class="header" href="#streaming">Streaming</a></h2>
+<p>It is important that results of a query can be made available as soon as possible and be streamed to the next process that needs to operate on that data, otherwise there would be unacceptable latency involved as each operation would have to wait for the previous operation to complete.</p>
+<p>However, some operations require all the input data to be received before any output can be produced. A sort operation is a good example of this. It isn't possible to completely sort a dataset until the whole data set has been received. The problem can be alleviated by increasing the number of partitions so that a large number of partitions are sorted in parallel and then the sorted batches can be combined efficiently using a merge operator.</p>
+<h2 id="custom-code"><a class="header" href="#custom-code">Custom Code</a></h2>
+<p>It is often necessary to run custom code as part of a distributed query or computation. For a single language query engine it is often possible to use the language's built-in serialization mechanism to transmit this code over the network at query execution time which is very convenient during development. Another approach is to publish compiled code to a repository so that it can be downloaded into a cluster at runtime. For JVM based systems, a maven repository could be used. A more general purpose approach is to package all runtime dependencies into a Docker image.</p>
+<p>The query plan needs to provide the necessary information to load the user code at runtime. For JVM based systems this could be a classpath and a class name. For C based systems, this could be the path to a shared object. In either case, the user code will need to implement some known API.</p>
+<h2 id="distributed-query-optimizations"><a class="header" href="#distributed-query-optimizations">Distributed Query Optimizations</a></h2>
+<p>Distributed query execution has a lot of overhead compared to parallel query execution on a single host and should only be used when there is benefit in doing so. I recommend reading the paper <a href="https://www.usenix.org/system/files/conference/hotos15/hotos15-paper-mcsherry.pdf">Scalability! But at what COST</a> for some interesting perspectives on this topic.</p>
+<p>Also, there are many ways to distribute the same query so how do we know which one to use?</p>
+<p>One answer is to build a mechanism to determine the cost of executing a particular query plan and then create some subset of all possible combinations of query plan for a given problem and determine which one is most efficient.</p>
+<p>There are many factors involved in computing the cost of an operation and there are different resource costs and limitations involved.</p>
+<ul>
+<li><strong>Memory</strong>: We are typically concerned with availability of memory rather than performance. Processing data in memory is orders of magnitude faster than reading and writing to disk.</li>
+<li><strong>CPU</strong>: For workloads that are parallelizable, more CPU cores means better throughput.</li>
+<li><strong>GPU</strong>: Some operations are orders of magnitude faster on GPUs compared to CPUs.</li>
+<li><strong>Disk</strong>: Disks have finite read and write speeds and cloud vendors typically limit the number of I/O operations per second (IOPS). Different types of disk have different performance characteristics (spinning disk vs SSD vs NVMe).</li>
+<li><strong>Network</strong>: Distributed query execution involves streaming data between nodes. There is a throughput limitation imposed by the networking infrastructure.</li>
+<li><strong>Distributed Storage</strong>: It is very common for source data to be stored in a distributed file system (HDFS) or object store (Amazon S3, Azure Blob Storage) and there is a cost in transferring data between distributed storage and local file systems.</li>
+<li><strong>Data Size</strong>: The size of the data matters. When performing a join between two tables and data needs to be transferred over the network, it is better to transfer the smaller of the two tables. If one of the tables can fit in memory than a more efficient join operation can be used.</li>
+<li><strong>Monetary Cost</strong>: If a query can be computed 10% faster at 3x the cost, is it worth it? That is a question best answered by the user of course. Monetary costs are typically controlled by limiting the amount of compute resource that is available.</li>
+</ul>
+<p>Query costs can be computed upfront using an algorithm if enough information is known ahead of time about the data, such as how large the data is, the cardinality of the partition of join keys used in the query, the number of partitions, and so on. This all depends on certain statistics being available for the data set being queried.</p>
+<p>Another approach is to just start running a query and have each operator adapt based on the input data it receives. Apache Spark 3.0.0 introduced an Adaptive Query Execution feature that does just this.</p>
+<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="12-parallel-query.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="14-testing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="12-parallel-query.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="14-testing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
