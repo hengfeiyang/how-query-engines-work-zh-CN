@@ -1,0 +1,6 @@
+[book]
+authors = ["hengfeiyang"]
+language = "zh-CN"
+multilingual = false
+src = "docs"
+title = "How Query Engines Work 中文版"
