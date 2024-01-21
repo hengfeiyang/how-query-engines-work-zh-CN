@@ -1,10 +1,10 @@
 # How Query Engines Work 中文版
 
-阅读地址：https://hengfeiyang.github.io/how-query-engines-work-zh-CN/
+阅读地址：[https://hengfeiyang.github.io/how-query-engines-work-zh-CN/](https://hengfeiyang.github.io/how-query-engines-work-zh-CN/)
 
-英文原版：https://howqueryengineswork.com/
+英文原版：[https://howqueryengineswork.com/](https://howqueryengineswork.com/)
 
-作者主页：https://andygrove.io/how-query-engines-work/
+作者主页：[https://andygrove.io/how-query-engines-work/](https://andygrove.io/how-query-engines-work/)
 
 原文许可：Copyright © 2020-2023 Andy Grove. All rights reserved
 
