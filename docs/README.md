@@ -1,6 +1,6 @@
 # How Query Engines Work 中文版
 
-阅读地址：
+阅读地址：https://hengfeiyang.github.io/how-query-engines-work-zh-CN/
 
 英文原版：https://howqueryengineswork.com/
 
