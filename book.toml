@@ -4,3 +4,7 @@ language = "zh-CN"
 multilingual = false
 src = "docs"
 title = "How Query Engines Work 中文版"
+
+[output.html]
+git-repository-url = "https://github.com/hengfeiyang/how-query-engines-work-zh-CN"
+edit-url-template = "https://github.com/hengfeiyang/how-query-engines-work-zh-CN/edit/main/{path}"
