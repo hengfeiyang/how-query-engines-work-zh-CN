@@ -205,22 +205,22 @@
 <p>如果您对这本书有任何反馈，请通过 Twitter @andygrove_io 向我发送私信或发送电子邮件至 agrove@apache.org。</p>
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="what-is-a-query-engine"><a class="header" href="#what-is-a-query-engine">What Is a Query Engine?</a></h1>
-<p>A query engine is a piece of software that can execute queries against data to produce answers to questions, such as:</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="什么是查询引擎"><a class="header" href="#什么是查询引擎">什么是查询引擎？</a></h1>
+<p>查询引擎是一种软件，可以对数据执行查询以生成问题的答案，例如：</p>
 <ul>
-<li>What were my average sales by month so far this year?</li>
-<li>What were the five most popular web pages on my site in the past day?</li>
-<li>How does web traffic compare month-by-month with the previous year?</li>
+<li>今年到目前为止，我的月平均销售额是多少？</li>
+<li>过去一天我网站上最受欢迎的五个网页是什么？</li>
+<li>与上一年相比，每月的网站流量如何？</li>
 </ul>
-<p>The most widespread query language is <a href="https://en.wikipedia.org/wiki/SQL">Structured Query Language</a> (abbreviated as SQL). Many developers will have encountered relational databases at some point in their careers, such as MySQL, Postgres, Oracle, or SQL Server. All of these databases contain query engines that support SQL.</p>
-<p>Here are some example SQL queries.</p>
-<p><em>SQL Example: Average Sales By Month</em></p>
+<p>最广泛使用的查询语言是<a href="https://en.wikipedia.org/wiki/SQL">结构化查询语言</a>（简称SQL）。许多开发人员在其职业生涯的某个阶段都会遇到过关系数据库，例如 MySQL、Postgres、Oracle 或 SQL Server。所有这些数据库都包含支持 SQL 的查询引擎。</p>
+<p>以下是一些 SQL 查询示例。</p>
+<p><em>SQL 示例：月平均销售额</em></p>
 <pre><code class="language-sql">SELECT month, AVG(sales)
 FROM product_sales
 WHERE year = 2020
 GROUP BY month;
 </code></pre>
-<p><em>SQL Example: Top 5 Web Pages Yesterday</em></p>
+<p><em>SQL 示例：昨天排名前 5 的网页</em></p>
 <pre><code class="language-sql">SELECT page_url, COUNT(*) AS num_visits
 FROM apache_log
 WHERE event_date = yesterday()
@@ -228,9 +228,9 @@ GROUP BY page_url
 ORDER BY num_visits DESC
 LIMIT 5;
 </code></pre>
-<p>SQL is powerful and widely understood but has limitations in the world of so-called &quot;Big Data,&quot; where data scientists often need to mix in custom code with their queries. Platforms and tools such as Apache Hadoop, Apache Hive, and Apache Spark are now widely used to query and manipulate vast data volumes.</p>
-<p>Here is an example that demonstrates how Apache Spark can be used to perform a simple aggregate query against a Parquet data set. The real power of Spark is that this query can be run on a laptop or on a cluster of hundreds of servers with no code changes required.</p>
-<p><em>Example of Apache Spark Query using DataFrame</em></p>
+<p>SQL 功能强大且被广泛理解，但在所谓的“大数据”世界中存在局限性，数据科学家通常需要将自定义代码与其查询混合在一起。现在，Apache Hadoop、Apache Hive 和 Apache Spark 等平台和工具现在广泛用于查询和操作海量数据。</p>
+<p>以下示例演示了如何使用 Apache Spark 对 Parquet 数据集执行简单的聚合查询。Spark 的真正强大之处在于，该查询可以在笔记本电脑或数百台服务器的集群上运行，而无需更改代码。</p>
+<p><em>Apache Spark 使用 DataFrame 查询示例</em></p>
 <pre><code class="language-scala">val spark: SparkSession = SparkSession.builder
   .appName(&quot;Example&quot;)
   .master(&quot;local[*]&quot;)
@@ -243,21 +243,21 @@ val df = spark.read.parquet(&quot;/mnt/nyctaxi/parquet&quot;)
 
 df.show()
 </code></pre>
-<h2 id="why-are-query-engines-popular"><a class="header" href="#why-are-query-engines-popular">Why Are Query Engines Popular?</a></h2>
-<p>Data is growing at an ever-increasing pace and often cannot fit on a single computer. Specialist engineering skills are needed to write distributed code for querying data, and it isn't practical to write custom code each time new answers are needed from data.</p>
-<p>Query engines provide a set of standard operations and transformations that the end-user can combine in different ways through a simple query language or application programming interface and are tuned for good performance.</p>
-<h2 id="what-this-book-covers"><a class="header" href="#what-this-book-covers">What This Book Covers</a></h2>
-<p>This book provides an overview of every step involved in building a general-purpose query engine.</p>
-<p>The query engine discussed in this book is a simple query engine developed specifically for this book, with the code being developed alongside writing the book content to make sure that I could write about topics while I was facing design decisions.</p>
-<h2 id="source-code"><a class="header" href="#source-code">Source Code</a></h2>
-<p>Full source code for the query engine discussed in this book is located in the following GitHub repository.</p>
+<h2 id="为什么查询引擎这么流行"><a class="header" href="#为什么查询引擎这么流行">为什么查询引擎这么流行？</a></h2>
+<p>数据正以前所未有的速度增长，并且往往无法仅存储在单台计算机上。编写用于查询数据的分布式代码需要专业工程技能，并且每次需要从数据中获取新答案时都编写定制代码是不现实的。</p>
+<p>查询引擎提供了一组标准操作和转换，最终用户可以通过简单的查询语言或应用程序编程接口以不同方式组合使用，并且调优以获得良好性能。</p>
+<h2 id="本书内容概述"><a class="header" href="#本书内容概述">本书内容概述</a></h2>
+<p>本书提供了构建通用查询引擎所涉及的每个步骤的概览。</p>
+<p>本书中讨论的查询引擎是专门为本书开发的简单查询引擎，代码是在编写本书内容的同时开发的，以确保我可以在面临设计决策时编写有关主题的内容。</p>
+<h2 id="源代码"><a class="header" href="#源代码">源代码</a></h2>
+<p>本书中讨论的查询引擎的完整源代码位于以下 GitHub 存储库中。</p>
 <pre><code>https://github.com/andygrove/how-query-engines-work
 </code></pre>
-<p>Refer to the README in the project for up-to-date instructions for building the project using Gradle.</p>
-<h2 id="why-kotlin"><a class="header" href="#why-kotlin">Why Kotlin?</a></h2>
-<p>The focus of this book is query engine design, which is generally programming language-agnostic. I chose Kotlin for this book because it is concise and easy to comprehend. It is also 100% compatible with Java, meaning that you can call Kotlin code from Java, and other Java-based languages, such as Scala.</p>
-<p>However, the DataFusion query engine in the Apache Arrow project is also primarily based on the design in this book. Readers who are more interested in Rust than JVM can refer to the DataFusion source code in conjunction with this book.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p>请参阅项目中的README，获取使用Gradle构建项目的最新指南。</p>
+<h2 id="为什么使用-kotlin"><a class="header" href="#为什么使用-kotlin">为什么使用 Kotlin？</a></h2>
+<p>本书的重点是查询引擎设计，这通常与编程语言无关。我之所以为这本书选择Kotlin，是因为它简洁易懂。它还与 Java 100% 兼容，这意味着您可以从 Java 和其他基于 Java 的语言（例如 Scala）调用 Kotlin 代码。</p>
+<p>然而，Apache Arrow项目中的DataFusion查询引擎也主要基于本书的设计。对Rust比JVM更感兴趣的读者可以结合本书参考DataFusion源码。</p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="apache-arrow"><a class="header" href="#apache-arrow">Apache Arrow</a></h1>
 <p>Apache Arrow started as a specification for a memory format for columnar data, with implementations in Java and C++. The memory format is efficient for vectorized processing on modern hardware such as CPUs with SIMD (Single Instruction, Multiple Data) support and GPUs.</p>
