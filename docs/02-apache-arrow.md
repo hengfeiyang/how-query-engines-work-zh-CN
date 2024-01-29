@@ -1,97 +1,100 @@
 # Apache Arrow
 
-Apache Arrow started as a specification for a memory format for columnar data, with implementations in Java and C++. The memory format is efficient for vectorized processing on modern hardware such as CPUs with SIMD (Single Instruction, Multiple Data) support and GPUs.
+Apache Arrow 最初是作为列式数据内存格式的规范而开始的，并以 Java 和 C++ 实现。这种内存格式对于在支持 SIMD（单指令，多数据）的现代硬件如 CPU 和 GPU 上进行向量化处理非常高效。
 
-There are several benefits to having a standardized memory format for data:
+采用标准化的内存数据格式有几个好处：
 
-- High-level languages such as Python or Java can make calls into lower-level languages such as Rust or C++ for compute-intensive tasks by passing pointers to the data, rather than making a copy of the data in a different format, which would be very expensive.
-- Data can be transferred between processes efficiently without much serialization overhead because the memory format is also the network format (although data can also be compressed).
-- It should make it easier to build connectors, drivers, and integrations between various open-source and commercial projects in the data science and data analytics space and allow developers to use their favorite language to leverage these platforms.
+- Python 或 Java 等高级语言可以通过传递指向数据的指针而不是以不同的格式复制数据（这将非常贵）来调用 Rust 或 C++ 等低级语言来执行计算密集型任务。
+- 数据可以在进程之间有效地传输，而无需大量序列化开销，因为内存格式也是网络格式（尽管数据也可以被压缩）。
+- 它应该使在数据科学和数据分析领域的各种开源和商业项目之间构建连接器、驱动程序和集成变得更加容易，并允许开发人员使用他们最喜欢的语言来利用这些平台。
 
-Apache Arrow now has implementations in many programming languages, including C, C++, C#, Go, Java, JavaScript, Julia, MATLAB, Python, R, Ruby, and Rust.
+Apache Arrow 现在有多种编程语言的实现，包括 C、C++、C#、Go、Java、JavaScript、Julia、MATLAB、Python、R、Ruby 和 Rust。
 
-## Arrow Memory Model
+## Arrow 内存模型
 
-The memory model is described in detail on the [Arrow web site](https://arrow.apache.org/docs/format/Columnar.html), but essentially each column is represented by a single vector holding the raw data, along with separate vectors representing null values and offsets into the raw data for variable-width types.
+[Arrow 网站](https://arrow.apache.org/docs/format/Columnar.html) 上详细描述了内存模型，但本质上每一列都由保存原始数据的单个向量表示，以及表示空值和可变宽度类型的原始数据偏移量的单独向量。
 
-## Inter-Process Communication (IPC)
+## 进程间通信（IPC）
 
-As I mentioned earlier, data can be passed between processes by passing a pointer to the data. However, the receiving process needs to know how to interpret this data, so an IPC format is defined for exchanging metadata such as schema information. Arrow uses Google Flatbuffers to define the metadata format.
+正如我之前提到的，可以通过传递指向数据的指针来在进程之间传递数据。然而，接收进程需要知道如何解释这些数据，因此定义了 IPC 格式来交换元数据，例如结构信息。Arrow 使用 Google Flatbuffers 来定义元数据格式。
 
-## Compute Kernels
+## 计算核心
 
-The scope of Apache Arrow has expanded to provide computational libraries for evaluating expressions against data. The Java, C++, C, Python, Ruby, Go, Rust, and JavaScript implementations contain computational libraries for performing computations on Arrow memory.
+Apache Arrow 的范围已经扩展到为评估表达式提供计算库。Java、C++、C、Python、Ruby、Go、Rust 和 JavaScript 实现包含了用于在 Arrow 内存上执行计算的计算库。
 
-Since this book mostly refers to the Java implementation, it is worth pointing out that Dremio recently donated Gandiva, which is a Java library that compiles expressions down to LLVM and supports SIMD. JVM developers can delegate operations to the Gandiva library and benefit from performance gains that wouldn't be possible natively in Java.
+由于本书主要涉及 Java 实现，值得一提的是 [Dremio](https://www.dremio.com/) 最近捐赠了 [Gandiva](https://github.com/apache/arrow/tree/main/cpp/src/gandiva)，这是一个将表达式编译为 LLVM 并支持 SIMD 的 Java 库。JVM 开发人员可以将操作委托给 [Gandiva](https://github.com/apache/arrow/tree/main/cpp/src/gandiva) 库，并从 Java 本身无法实现的性能提升中获益。
 
-## Arrow Flight Protocol
+## Arrow Flight 协议
 
-More recently, Arrow has defined a [Flight protocol](https://arrow.apache.org/blog/2019/10/13/introducing-arrow-flight/) for efficiently streaming Arrow data over the network. Flight is based on gRPC and Google Protocol Buffers.
+最近，Arrow 定义了一种用于高效地在网络上流式传输 Arrow 数据的 [Flight](https://arrow.apache.org/blog/2019/10/13/introducing-arrow-flight/) 协议，Flight 协议基于 [gRPC](https://grpc.io/) 和 [Google Protocol Buffers](https://protobuf.dev/)。
 
-The Flight protocol defines a FlightService with the following methods:
+Flight 协议定义了一个 FlightService，具有以下方法：
 
 ### Handshake
 
-Handshake between client and server. Depending on the server, the handshake may be required to determine the token that should be used for future operations. Both request and response are streams to allow multiple round-trips depending on the auth mechanism.
+客户端和服务端之间的握手。根据服务端的不同，可能需要握手来确定应用于未来操作的 Token。根据验证机制请求和响应都是允许多次往返的数据流。
 
 ### ListFlights
 
-Get a list of available streams given a particular criteria. Most flight services will expose one or more streams that are readily available for retrieval. This API allows listing the streams available for consumption. A user can also provide a criteria. The criteria can limit the subset of streams that can be listed via this interface. Each flight service allows its own definition of how to consume criteria.
+给定特定条件获取可用流列表。大多数 flight 服务都会公开一个或多个可供检索的流。此 API 允许列出可供使用的流。用户还可以提供条件，这些条件可以限制可以通过此接口列出的流的子集。每个 flight 服务都允许自己定义如何使用的条件。
 
 ### GetFlightInfo
 
-For a given FlightDescriptor, get information about how the flight can be consumed. This is a useful interface if the consumer of the interface can already identify the specific flight to consume. This interface can also allow a consumer to generate a flight stream through a specified descriptor. For example, a flight descriptor might be something that includes a SQL statement or a Pickled Python operation that will be executed. In those cases, the descriptor will not be previously available within the list of available streams provided by ListFlights, but will be available for consumption for the duration defined by the specific flight service.
+对于给定的 FlightDescriptor，获取有关如何使用 flight 的信息。如果接口的消费者已经可以识别要使用的特定 flight，那么这是一个有用的接口。该接口还可以允许消费者通过指定的 descriptor 生成 flight 流。例如，一个 flight descriptor 可能包含将执行的 SQL 语句或 [Pickled Python](https://docs.python.org/3/library/pickle.html) 操作。在这些情况下，之前在 ListFilghts 可用流列表中未提供的流，反而在特定的 Flight 服务定义的期间可用。
 
 ### GetSchema
 
-For a given FlightDescriptor, get the Schema as described in Schema.fbs::Schema. This is used when a consumer needs the Schema of flight stream. Similar to GetFlightInfo, this interface may generate a new flight that was not previously available in ListFlights.
+对于给定的 FlightDescriptor，获取在 Schema.fbs::Schema 中描述的结构。当消费者需要 flight 流的结构时使用此功能。与 GetFlightInfo 类似，此接口可能会生成一个以前在 ListFlights 中不可用的新 flight。
 
 ### DoGet
 
-Retrieve a single stream associated with a particular descriptor associated with the referenced ticket. A Flight can be composed of one or more streams where each stream can be retrieved using a separate opaque ticket that the flight service uses for managing a collection of streams.
+检索与引用 ticket 相关的特定描述符所关联的单个流。一个 Flight 可以由一个或多个流组成，其中每个流都可以使用一个独立的 Flight 服务用来管理数据流集合的 opaque ticket 进行检索。
 
 ### DoPut
 
-Push a stream to the flight service associated with a particular flight stream. This allows a client of a flight service to upload a stream of data. Depending on the particular flight service, a client consumer could be allowed to upload a single stream per descriptor or an unlimited number. In the latter, the service might implement a 'seal' action that can be applied to a descriptor once all streams are uploaded.
+将流推送到与特定 flight 流关联的 flight 服务。这允许 flight 服务的客户端上传数据流。根据特定的 flight 服务，可以允许客户端消费者上传每个描述符的单个流或无限数量的流。后者，服务可能会实现 “seal” 操作，一旦所有流都上传完毕，该操作就可以应用于描述符。
 
 ### DoExchange
 
-Open a bidirectional data channel for a given descriptor. This allows clients to send and receive arbitrary Arrow data and application-specific metadata in a single logical stream. In contrast to DoGet/DoPut, this is more suited for clients offloading computation (rather than storage) to a Flight service.
+为给定描述符打开双向数据通道。这允许客户端在单个逻辑流中发送和接收任意 Arrow 数据和应用程序的特定元数据。与 DoGet/DoPut 相比，这更适合客户端将计算（而不是存储）卸载到 Flight 服务。
 
 ### DoAction
-Flight services can support an arbitrary number of simple actions in addition to the possible ListFlights, GetFlightInfo, DoGet, DoPut operations that are potentially available. DoAction allows a flight client to do a specific action against a flight service. An action includes opaque request and response objects that are specific to the type of action being undertaken.
+
+除了可能可用的 ListFlights、GetFlightInfo、DoGet、DoPut 操作之外， flight 服务还可以支持任意数量的简单操作。DoAction 允许 flight 客户端针对 flight 服务执行特定操作。一个操作包括特定于正在执行的操作类型的不透明请求和响应对象。
 
 ### ListActions
-A flight service exposes all of the available action types that it has along with descriptions. This allows different flight consumers to understand the capabilities of the flight service.
+
+一个 flight 服务公开其所有可用操作类型及其描述。这使得不同的 flight 消费者能够了解 flight 服务的功能。
 
 ## Arrow Flight SQL
-There is a proposal to add SQL capabilities to Arrow Flight. At the time of writing (Jan 2021), there is a PR up for a C++ implementation and the tracking issue is [ARROW-14698](https://issues.apache.org/jira/browse/ARROW-14698).
 
-## Query Engines
+有人提议向 Arrow Flight 添加 SQL 功能。在撰写本文时（2021年1月），已经有一个针对 C++ 实现的 PR，跟踪问题为 [ARROW-14698](https://issues.apache.org/jira/browse/ARROW-14698)。
+
+## 查询引擎
 
 ### DataFusion
 
-The Rust implementation of Arrow contains an in-memory query engine named DataFusion, which was donated to the project in 2019. This project is maturing rapidly and is gaining traction. For example, InfluxData is building the core of the next generation of InfluxDB by leveraging DataFusion.
+Arrow 的 Rust 实现包含一个名为 DataFusion 的内存查询引擎，该引擎于 2019 年捐赠给该项目。该项目正在迅速成熟，并越来越受到关注。例如，InfluxData 正在利用 DataFusion 构建下一代 InfluxDB 的核心。
 
 ### Ballista
 
-Ballista is a distributed compute platform primarily implemented in Rust, and powered by Apache Arrow. It is built on an architecture that allows other programming languages (such as Python, C++, and Java) to be supported as first-class citizens without paying a penalty for serialization costs.
+Ballista 是一个分布式计算平台，主要用 Rust 实现，并由 Apache Arrow 提供支持。它构建了一种架构允许其他编程语言（例如 Python、C++ 和 Java）作为一等公民而无需额外序列化成本。
 
-The foundational technologies in Ballista are:
+Ballista 中的基础技术包括：
 
-- **Apache Arrow** for the memory model and type system.
-- **Apache Arrow Flight** protocol for efficient data transfer between processes.
-- **Apache Arrow Flight SQL** protocol for use by business intelligence tools and JDBC drivers to connect to a Ballista cluster
-- **Google Protocol Buffers** for serializing query plans.
-- **Docker** for packaging up executors along with user-defined code.
-- **Kubernetes** for deployment and management of the executor docker containers.
+- **Apache Arrow** 用于内存模型和类型系统。
+- **Apache Arrow Flight** 协议用于进程间高效数据传输。
+- **Apache Arrow Flight SQL** 协议供商业智能工具和JDBC驱动程序连接到 Ballista 集群。
+- **Google Protocol Buffers**  用于序列化查询计划。
+- **Docker** 用于打包执行器以及用户定义代码。
+- **Kubernetes** 用于部署和管理执行器 docker 容器。
 
-Ballista was donated to the Arrow project in 2021 and is not ready for production use although it is capable of running a number of queries from the popular TPC-H benchmark with good performance.
+Ballista 于 2021 年捐赠给 Arrow 项目，虽然能够以良好的性能运行流行的 TPC-H 基准测试中的大量查询，但尚未准备好投入生产使用。
 
-### C++ Query Engine
+### C++ 查询引擎
 
-The C++ implementation has work in progress to add a query engine and the current focus is on implementing efficient compute primitives and a Dataset API.
+C++C++ 实现正在进行添加查询引擎的工作，当前的重点是实现高效的计算原语和数据集 API。
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**
