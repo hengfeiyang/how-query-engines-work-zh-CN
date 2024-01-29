@@ -93,7 +93,7 @@ Ballista 于 2021 年捐赠给 Arrow 项目，虽然能够以良好的性能运�
 
 ### C++ 查询引擎
 
-C++C++ 实现正在进行添加查询引擎的工作，当前的重点是实现高效的计算原语和数据集 API。
+C++ 实现正在进行添加查询引擎的工作，当前的重点是实现高效的计算原语和数据集 API。
 
 *这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
