@@ -1,16 +1,16 @@
-# Data Sources
+# 数据源
 
-_The source code discussed in this chapter can be found in the `datasource` module of the[ KQuery project](https://github.com/andygrove/how-query-engines-work)._
+> 本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `datasource` 模块中找到。
 
-A query engine is of little use without a data source to read from and we want the ability to support multiple data sources, so it is important to create an interface that the query engine can use to interact with data sources. This also allows users to use our query engine with their custom data sources. Data sources are often files or databases but could also be in-memory objects.
+查询引擎如果没有数据源可读取，那么它几乎无用武之地。我们希望能够支持多个数据源，因此创建一个接口让查询引擎能与数据源交互非常重要。这还允许用户将我们的查询引擎与他们的自定义数据源配合使用。数据源通常是文件或数据库，但也可以是内存中的对象。
 
-## Data Source Interface
+## 数据源接口
 
-During query planning, it is important to understand the schema of the data source so that the query plan can be validated to make sure that referenced columns exist and that data types are compatible with the expressions being used to reference them. In some cases, the schema might not be available, because some data sources do not have a fixed schema and are generally referred to as "schema-less". JSON documents are one example of a schema-less data source.
+在查询计划阶段，了解数据源的结构非常重要，以便可以验证查询计划以确保引用的列存在并且数据类型与用于引用它们的表达式兼容。在某些情况下，结构可能不可用，因为某些数据源没有固定结构，通常称为“无结构（schema-less）”。 JSON 文档便是一种无结构数据源的例子。
 
-During query execution, we need the ability to fetch data from the data source and need to be able to specify which columns to load into memory for efficiency. There is no sense loading columns into memory if the query doesn't reference them.
+在查询执行阶段，我们需要能够从数据源获取数据，并且需要能够指定将哪些列加载到内存中以提高效率。如果查询不涉及这些列，则没必要将其加载到内存中。
 
-*KQuery DataSource Interface*
+*KQuery 数据源接口*
 
 ```kotlin
 interface DataSource {
@@ -23,28 +23,28 @@ interface DataSource {
 }
 ```
 
-## Data Source Examples
+## 数据源示例
 
-There are a number of data sources that are often encountered in data science or analytics.
+在数据科学或分析领域经常遇到许多数据源。
 
-### Comma-Separated Values (CSV)
+### 逗号分隔值 (CSV)
 
-CSV files are text files with one record per line and fields are separated with commas, hence the name "Comma Separated Values". CSV files do not contain schema information (other than optional column names on the first line in the file) although it is possible to derive the schema by reading the file first. This can be an expensive operation.
+CSV 文件是文本文件，每行一条记录，字段之间用逗号分隔，因此称为“逗号分隔值”。 CSV 文件不包含结构信息（文件第一行的可选列名称除外），尽管可以通过先读取文件来推导出结构，这可能是一项昂贵的操作。
 
 ### JSON
 
-The JavaScript Object Notation format (JSON) is another popular text-based file format. Unlike CSV files, JSON files are structured and can store complex nested data types.
+JavaScript 对象表示法格式 (JSON) 是另一种流行的基于文本的文件格式。与 CSV 文件不同，JSON 文件是结构化的并且可以存储复杂的嵌套数据类型。
 
 ### Parquet
 
-Parquet was created to provide a compressed, efficient columnar data representation and is a popular file format in the Hadoop ecosystem. Parquet is built from the ground up with complex nested data structures in mind, and uses the [record shredding and assembly algorithm](https://github.com/julienledem/redelm/wiki/The-striping-and-assembly-algorithms-from-the-Dremel-paper) described in the Dremel paper.
+Parquet 旨在提供压缩、高效的列式数据表示，是 Hadoop 生态系统中流行的文件格式。Parquet 从一开始就考虑到了复杂的嵌套数据结构，并使用 Dremel 论文中描述的[record shredding and assembly algorithm](https://github.com/julienledem/redelm/wiki/The-striping-and-assembly-algorithms-from-the-Dremel-paper) 算法构建。
 
-Parquet files contain schema information and data is stored in batches (referred to as "row groups") where each batch consists of columns. The row groups can contain compressed data and can also contain optional metadata such as minimum and maximum values for each column. Query engines can be optimised to use this metadata to determine when row groups can be skipped during a scan.
+Parquet 文件包含结构信息和批量存储的数据（称为“row groups”），其中每个批次若干列组成。`row groups` 可以包含压缩数据，还可以包含可选元数据，例如每列的最小值和最大值。查询引擎以使用此元数据来确定在扫描期间何时可以跳过某些 `row groups`。
 
 ### Orc
 
-The Optimized Row Columnar (Orc) format is similar to Parquet. Data is stored in columnar batches called "stripes".
+The Optimized Row Columnar (Orc) 优化行列 格式类似于 Parquet，数据以称为“stripes”的列式批量格式存储。
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**
