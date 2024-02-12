@@ -400,9 +400,7 @@ df.show()
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="数据源"><a class="header" href="#数据源">数据源</a></h1>
-<blockquote>
-<p>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>datasource</code> 模块中找到。</p>
-</blockquote>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>datasource</code> 模块中找到。</em></p>
 <p>查询引擎如果没有数据源可读取，那么它几乎无用武之地。我们希望能够支持多个数据源，因此创建一个接口让查询引擎能与数据源交互非常重要。这还允许用户将我们的查询引擎与他们的自定义数据源配合使用。数据源通常是文件或数据库，但也可以是内存中的对象。</p>
 <h2 id="数据源接口"><a class="header" href="#数据源接口">数据源接口</a></h2>
 <p>在查询计划阶段，了解数据源的结构非常重要，以便可以验证查询计划以确保引用的列存在并且数据类型与用于引用它们的表达式兼容。在某些情况下，结构可能不可用，因为某些数据源没有固定结构，通常称为“无结构（schema-less）”。 JSON 文档便是一种无结构数据源的例子。</p>
@@ -427,7 +425,7 @@ df.show()
 <p>Parquet 旨在提供压缩、高效的列式数据表示，是 Hadoop 生态系统中流行的文件格式。Parquet 从一开始就考虑到了复杂的嵌套数据结构，并使用 Dremel 论文中描述的<a href="https://github.com/julienledem/redelm/wiki/The-striping-and-assembly-algorithms-from-the-Dremel-paper">record shredding and assembly algorithm</a> 算法构建。</p>
 <p>Parquet 文件包含结构信息和批量存储的数据（称为“row groups”），其中每个批次若干列组成。<code>row groups</code> 可以包含压缩数据，还可以包含可选元数据，例如每列的最小值和最大值。查询引擎以使用此元数据来确定在扫描期间何时可以跳过某些 <code>row groups</code>。</p>
 <h3 id="orc"><a class="header" href="#orc">Orc</a></h3>
-<p>The Optimized Row Columnar (Orc) 优化行列 格式类似于 Parquet，数据以称为“stripes”的列式批量格式存储。</p>
+<p>The Optimized Row Columnar (Orc) 优化行列 格式类似于 Parquet，数据以称为 “stripes” 的列式格式批量存储。</p>
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="logical-plans--expressions"><a class="header" href="#logical-plans--expressions">Logical Plans &amp; Expressions</a></h1>
