@@ -1,6 +1,6 @@
 # 数据源
 
-> 本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `datasource` 模块中找到。
+_本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `datasource` 模块中找到。_
 
 查询引擎如果没有数据源可读取，那么它几乎无用武之地。我们希望能够支持多个数据源，因此创建一个接口让查询引擎能与数据源交互非常重要。这还允许用户将我们的查询引擎与他们的自定义数据源配合使用。数据源通常是文件或数据库，但也可以是内存中的对象。
 
@@ -43,7 +43,7 @@ Parquet 文件包含结构信息和批量存储的数据（称为“row groups�
 
 ### Orc
 
-The Optimized Row Columnar (Orc) 优化行列 格式类似于 Parquet，数据以称为“stripes”的列式批量格式存储。
+The Optimized Row Columnar (Orc) 优化行列 格式类似于 Parquet，数据以称为 “stripes” 的列式格式批量存储。
 
 *这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
