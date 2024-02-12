@@ -1,37 +1,37 @@
-# Choosing a Type System
+# 选择一个类型系统
 
-_The source code discussed in this chapter can be found in the `datatypes` module of the[ KQuery project](https://github.com/andygrove/how-query-engines-work)._
+_本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `datatypes` 模块中找到。_
 
-The first step in building a query engine is to choose a type system to represent the different types of data that the query engine will be processing. One option would be to invent a proprietary type system specific to the query engine. Another option is to use the type system of the data source that the query engine is designed to query from.
+构建查询引擎的第一步是选择一个类型系统来表示查询引擎将要处理的不同类型的数据。一种选择是发明一种专门针对查询引擎的专有类型系统。另一种选择是使用查询引擎索要查询的数据源的类型系统。
 
-If the query engine is going to support querying multiple data sources, which is often the case, then there is likely some conversion required between each supported data source and the query engine's type system, and it will be important to use a type system capable of representing all the data types of all the supported data sources.
+如果查询引擎要支持查询多个数据源（通常是这种情况），那么每个支持的数据源和查询引擎的类型系统之间可能需要进行一些转换，因此使用一个能够代表所有支持的数据源的所有数据类型的类型系统将非常重要。
 
-## Row-Based or Columnar?
+## 基于行还是基于列？
 
-An important consideration is whether the query engine will process data row-by-row or whether it will represent data in a columnar format.
+一个重要的考虑因素是查询引擎将逐行处理数据还是以列式格式表示数据。
 
-Many of today's query engines are based on the [Volcano Query Planner](https://paperhub.s3.amazonaws.com/dace52a42c07f7f8348b08dc2b186061.pdf) where each step in the physical plan is essentially an iterator over rows. This is a simple model to implement but tends to introduce per-row overheads that add up pretty quickly when running a query against billions of rows. This overhead can be reduced by instead iterating over batches of data. Furthermore, if these batches represent columnar data rather than rows, it is possible to use "vectorized processing" and take advantage of SIMD (Single Instruction Multiple Data) to process multiple values within a column with a single CPU instruction. This concept can be taken even further by leveraging GPUs to process much larger quantities of data in parallel.
+如今许多的查询引擎都是基于 [Volcano Query Planner](https://paperhub.s3.amazonaws.com/dace52a42c07f7f8348b08dc2b186061.pdf)，其在物理计划中每个步骤本质上都是对行进行迭代。这种模型易于实现，但在对数十亿行运行查询时往往会导致每行开销迅速增加。通过对数据进行批量迭代，可以减少这种开销。此外，如果这些批量数据以列的方式而不是行的方式表示数据，那么就可以使用 “向量化处理” 并利用 SIMD (单指令多数据) 的优势，用单条 CPU 指令处理一列中的多个值。这个概念还可以更进一步，利用 GPU 来并行处理更大量的数据。
 
-## Interoperability
+## 互操作性
 
-Another consideration is that we may want to make our query engine accessible from multiple programming languages. It is common for users of query engines to use languages such as Python, R, or Java. We may also want to build ODBC or JDBC drivers to make it easy to build integrations.
+另一个考虑因素是我们可能希望使我们的查询引擎可以通过多种编程语言访问。查询引擎的用户通常使用 Python、R 或 Java 等语言。我们可能还希望构建 ODBC 或 JDBC 驱动程序，以便轻松构建集成。
 
-Given these requirements, it would be good to find an industry standard for representing columnar data and for exchanging this data efficiently between processes.
+考虑到这些需求，最好找到一个行业标准来表示列式数据并高效地在进程之间交换这些数据。
 
-It will probably come as little surprise that I believe that Apache Arrow provides an ideal foundation.
+我相信 Apache Arrow 提供了理想的基础，这一点可能并不奇怪。
 
-## Type System
+## 类型系统
 
-We will use Apache Arrow as the basis for our type system. The following Arrow classes are used to represent schema, fields, and data types.
+我们将使用 Apache Arrow 作为我们类型系统的基础。以下 Arrow 类用于表示结构、字段和数据类型。
 
-- *Schema* provides metadata for a data source or the results from a query. A schema consists of one or more fields.
-- *Field* provides the name and data type for a field within a schema, and specifies whether it allows null values or not.
-- *FieldVector* provides columnar storage for data for a field.
-- *ArrowType* represents a data type.
+- *Schema* 为数据源或查询结果提供元数据，结构由一个或多个字段组成。
+- *Field* 为结构中字段的名称和数据类型，并指定它是否允许空值。
+- *FieldVector* 为字段数据提供列式存储。
+- *ArrowType* 表示一种数据类型。
 
-KQuery introduces some additional classes and helpers as an abstraction over the Apache Arrow type system.
+KQuery 引入了一些额外的类和助手作为对 Apache Arrow 类型系统的抽象。
 
-KQuery provides constants that can be referenced for the supported Arrow data types
+KQuery 为受支持的 Arrow 数据类型提供了可引用的常量。
 
 ```kotlin
 object ArrowTypes {
@@ -50,7 +50,7 @@ object ArrowTypes {
 }
 ```
 
-Rather than working directly with `FieldVector`, KQuery introduces a `ColumnVector` interface as an abstraction to provide more convenient accessor methods, avoiding the need to case to a specific `FieldVector` implementation for each data type.
+KQuery 并没有直接使用 `FieldVector`，而是引入了一个 `ColumnVector` 接口作为抽象，以提供更方便的访问方法，从而避免了为每种数据类型都使用特定的 `FieldVector` 实现。
 
 ```kotlin
 interface ColumnVector {
@@ -60,7 +60,7 @@ interface ColumnVector {
 }
 ```
 
-This abstraction also makes it possible to have an implementation for scalar values, avoiding the need to create and populate a `FieldVector` with a literal value repeated for every index in the column.
+这种抽象也使得标量值的实现成为可能，从而避免了用字面值为列中每个索引重复创建和填入 `FieldVector`。
 
 ```kotlin
 class LiteralValueVector(
@@ -86,7 +86,8 @@ class LiteralValueVector(
 }
 ```
 
-KQuery also provides a `RecordBatch` class to represent a batch of columnar data.
+KQuery 还提供了一个 `RecordBatch` 类来表示一批列式数据。
+
 
 ```kotlin
 class RecordBatch(val schema: Schema, val fields: List<ColumnVector>) {
@@ -103,6 +104,6 @@ class RecordBatch(val schema: Schema, val fields: List<ColumnVector>) {
 }
 ```
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**
