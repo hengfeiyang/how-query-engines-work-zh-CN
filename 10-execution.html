@@ -186,50 +186,50 @@
 <p><em>The source code discussed in this chapter can be found in the <code>spark</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
 <p>First, we need to create a Spark context. Note that we are using a single thread for execution so that we can make a relatively fair comparison to the performance of the single threaded implementation in KQuery.</p>
 <pre><code class="language-scala">val spark = SparkSession.builder()
-  .master(&quot;local[1]&quot;)
+  .master("local[1]")
   .getOrCreate()
 </code></pre>
 <p>Next, we need to register the CSV file as a DataFrame against the context.</p>
 <pre><code class="language-scala">val schema = StructType(Seq(
-  StructField(&quot;VendorID&quot;, DataTypes.IntegerType),
-  StructField(&quot;tpep_pickup_datetime&quot;, DataTypes.TimestampType),
-  StructField(&quot;tpep_dropoff_datetime&quot;, DataTypes.TimestampType),
-  StructField(&quot;passenger_count&quot;, DataTypes.IntegerType),
-  StructField(&quot;trip_distance&quot;, DataTypes.DoubleType),
-  StructField(&quot;RatecodeID&quot;, DataTypes.IntegerType),
-  StructField(&quot;store_and_fwd_flag&quot;, DataTypes.StringType),
-  StructField(&quot;PULocationID&quot;, DataTypes.IntegerType),
-  StructField(&quot;DOLocationID&quot;, DataTypes.IntegerType),
-  StructField(&quot;payment_type&quot;, DataTypes.IntegerType),
-  StructField(&quot;fare_amount&quot;, DataTypes.DoubleType),
-  StructField(&quot;extra&quot;, DataTypes.DoubleType),
-  StructField(&quot;mta_tax&quot;, DataTypes.DoubleType),
-  StructField(&quot;tip_amount&quot;, DataTypes.DoubleType),
-  StructField(&quot;tolls_amount&quot;, DataTypes.DoubleType),
-  StructField(&quot;improvement_surcharge&quot;, DataTypes.DoubleType),
-  StructField(&quot;total_amount&quot;, DataTypes.DoubleType)
+  StructField("VendorID", DataTypes.IntegerType),
+  StructField("tpep_pickup_datetime", DataTypes.TimestampType),
+  StructField("tpep_dropoff_datetime", DataTypes.TimestampType),
+  StructField("passenger_count", DataTypes.IntegerType),
+  StructField("trip_distance", DataTypes.DoubleType),
+  StructField("RatecodeID", DataTypes.IntegerType),
+  StructField("store_and_fwd_flag", DataTypes.StringType),
+  StructField("PULocationID", DataTypes.IntegerType),
+  StructField("DOLocationID", DataTypes.IntegerType),
+  StructField("payment_type", DataTypes.IntegerType),
+  StructField("fare_amount", DataTypes.DoubleType),
+  StructField("extra", DataTypes.DoubleType),
+  StructField("mta_tax", DataTypes.DoubleType),
+  StructField("tip_amount", DataTypes.DoubleType),
+  StructField("tolls_amount", DataTypes.DoubleType),
+  StructField("improvement_surcharge", DataTypes.DoubleType),
+  StructField("total_amount", DataTypes.DoubleType)
 ))
 
-val tripdata = spark.read.format(&quot;csv&quot;)
-  .option(&quot;header&quot;, &quot;true&quot;)
+val tripdata = spark.read.format("csv")
+  .option("header", "true")
   .schema(schema)
-  .load(&quot;/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv&quot;)
+  .load("/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv")
 
-tripdata.createOrReplaceTempView(&quot;tripdata&quot;)
+tripdata.createOrReplaceTempView("tripdata")
 </code></pre>
 <p>Finally, we can go ahead and execute SQL against the DataFrame.</p>
 <pre><code class="language-scala">val start = System.currentTimeMillis()
 
 val df = spark.sql(
-  &quot;&quot;&quot;SELECT passenger_count, MAX(fare_amount)
+  """SELECT passenger_count, MAX(fare_amount)
     |FROM tripdata
-    |GROUP BY passenger_count&quot;&quot;&quot;.stripMargin)
+    |GROUP BY passenger_count""".stripMargin)
 
 df.foreach(row =&gt; println(row))
 
 val duration = System.currentTimeMillis() - start
 
-println(s&quot;Query took $duration ms&quot;)
+println(s"Query took $duration ms")
 </code></pre>
 <p>Executing this code on my desktop produces the following output.</p>
 <pre><code>[1,623259.86]
@@ -251,17 +251,17 @@ Query took 14418 ms
 
 val ctx = ExecutionContext()
 
-val df = ctx.csv(&quot;/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv&quot;, 1*1024)
+val df = ctx.csv("/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv", 1*1024)
             .aggregate(
-               listOf(col(&quot;passenger_count&quot;)),
-               listOf(max(cast(col(&quot;fare_amount&quot;), ArrowTypes.FloatType))))
+               listOf(col("passenger_count")),
+               listOf(max(cast(col("fare_amount"), ArrowTypes.FloatType))))
 
 val optimizedPlan = Optimizer().optimize(df.logicalPlan())
 val results = ctx.execute(optimizedPlan)
 
 results.forEach { println(it.toCSV()) }
 
-println(&quot;Query took $time ms&quot;)
+println("Query took $time ms")
 </code></pre>
 <p>This produces the following output on my desktop.</p>
 <pre><code>Schema&lt;passenger_count: Utf8, MAX: FloatingPoint(DOUBLE)&gt;
@@ -278,23 +278,23 @@ println(&quot;Query took $time ms&quot;)
 
 Query took 6740 ms
 </code></pre>
-<p>We can see that the results match those produced by Apache Spark. We also see that the performance is respectable for this size of input. It is very likely that Apache Spark will outperform KQuery with larger data sets since it is optimized for &quot;Big Data&quot;.</p>
+<p>We can see that the results match those produced by Apache Spark. We also see that the performance is respectable for this size of input. It is very likely that Apache Spark will outperform KQuery with larger data sets since it is optimized for "Big Data".</p>
 <h2 id="removing-the-query-optimizer"><a class="header" href="#removing-the-query-optimizer">Removing The Query Optimizer</a></h2>
 <p>Let's remove the optimizations and see how much they helped with performance.</p>
 <pre><code class="language-kotlin">val time = measureTimeMillis {
 
 val ctx = ExecutionContext()
 
-val df = ctx.csv(&quot;/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv&quot;, 1*1024)
+val df = ctx.csv("/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv", 1*1024)
             .aggregate(
-               listOf(col(&quot;passenger_count&quot;)),
-               listOf(max(cast(col(&quot;fare_amount&quot;), ArrowTypes.FloatType))))
+               listOf(col("passenger_count")),
+               listOf(max(cast(col("fare_amount"), ArrowTypes.FloatType))))
 
 val results = ctx.execute(df.logicalPlan())
 
 results.forEach { println(it.toCSV()) }
 
-println(&quot;Query took $time ms&quot;)
+println("Query took $time ms")
 </code></pre>
 <p>This produces the following output on my desktop.</p>
 <pre><code>1,623259.86

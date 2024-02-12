@@ -204,7 +204,7 @@
 <pre><code class="language-kotlin">is Column -&gt; {
   val i = input.schema().fields.indexOfFirst { it.name == expr.name }
   if (i == -1) {
-    throw SQLException(&quot;No column named '${expr.name}'&quot;)
+    throw SQLException("No column named '${expr.name}'")
   }
   ColumnExpression(i)
 </code></pre>
@@ -239,7 +239,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
     is Divide -&gt; DivideExpression(l, r)
 
     else -&gt; throw IllegalStateException(
-        &quot;Unsupported binary expression: $expr&quot;)
+        "Unsupported binary expression: $expr")
     }
 }
 </code></pre>
@@ -284,7 +284,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
       is Min -&gt; MinExpression(createPhysicalExpr(it.expr, plan.input))
       is Sum -&gt; SumExpression(createPhysicalExpr(it.expr, plan.input))
       else -&gt; throw java.lang.IllegalStateException(
-          &quot;Unsupported aggregate function: $it&quot;)
+          "Unsupported aggregate function: $it")
     }
   }
   HashAggregateExec(input, groupExpr, aggregateExpr, plan.schema())

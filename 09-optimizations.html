@@ -220,7 +220,7 @@ fun extractColumns(expr: LogicalExpr,
     is LiteralLong -&gt; {}
     is LiteralDouble -&gt; {}
     else -&gt; throw IllegalStateException(
-        &quot;extractColumns does not support expression: $expr&quot;)
+        "extractColumns does not support expression: $expr")
   }
 }
 </code></pre>

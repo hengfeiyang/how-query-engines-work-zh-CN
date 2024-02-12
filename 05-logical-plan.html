@@ -192,8 +192,8 @@
 <p>We can implement a simple recursive helper function to format a logical plan.</p>
 <pre><code class="language-kotlin">fun format(plan: LogicalPlan, indent: Int = 0): String {
   val b = StringBuilder()
-  0.rangeTo(indent).forEach { b.append(&quot;\t&quot;) }
-  b.append(plan.toString()).append(&quot;\n&quot;)
+  0.rangeTo(indent).forEach { b.append("\t") }
+  b.append(plan.toString()).append("\n")
   plan.children().forEach { b.append(format(it, indent+1)) }
   return b.toString()
 }
@@ -207,18 +207,18 @@
 <p>It is sometimes desirable to be able to serialize query plans so that they can easily be transferred to another process. It is good practice to add serialization early on as a precaution against accidentally referencing data structures that cannot be serialized (such as file handles or database connections).</p>
 <p>One approach would be to use the implementation languages' default mechanism for serializing data structures to/from a format such as JSON. In Java, the Jackson library could be used. Kotlin has the <code>kotlinx.serialization</code> library, and Rust has a serde crate, for example.</p>
 <p>Another option would be to define a language-agnostic serialization format using Avro, Thrift, or Protocol Buffers and then write code to translate between this format and the language-specific implementation.</p>
-<p>Since publishing the first edition of this book, a new standard named <a href="https://substrait.io/">&quot;substrait&quot;</a> has emerged, with the goal of providing cross-language serialization for relational algebra. I am excited about this project and predict that it will become the de-facto standard for representing query plans and open up many integration possibilities. For example, it would be possible to use a mature Java-based query planner such as Apache Calcite, serialize the plan in Substrait format, and then execute the plan in a query engine implemented in a lower-level language, such as C++ or Rust. For more information, visit https://substrait.io/.</p>
+<p>Since publishing the first edition of this book, a new standard named <a href="https://substrait.io/">"substrait"</a> has emerged, with the goal of providing cross-language serialization for relational algebra. I am excited about this project and predict that it will become the de-facto standard for representing query plans and open up many integration possibilities. For example, it would be possible to use a mature Java-based query planner such as Apache Calcite, serialize the plan in Substrait format, and then execute the plan in a query engine implemented in a lower-level language, such as C++ or Rust. For more information, visit https://substrait.io/.</p>
 <h2 id="logical-expressions"><a class="header" href="#logical-expressions">Logical Expressions</a></h2>
 <p>One of the fundamental building blocks of a query plan is the concept of an expression that can be evaluated against data at runtime.</p>
 <p>Here are some examples of expressions that are typically supported in query engines.</p>
 <div class="table-wrapper"><table><thead><tr><th>Expression</th><th>Examples</th></tr></thead><tbody>
-<tr><td>Literal Value</td><td>&quot;hello&quot;, 12.34</td></tr>
+<tr><td>Literal Value</td><td>"hello", 12.34</td></tr>
 <tr><td>Column Reference</td><td>user_id, first_name, last_name</td></tr>
 <tr><td>Math Expression</td><td>salary * state_tax</td></tr>
 <tr><td>Comparison Expression</td><td>x &gt;= y</td></tr>
 <tr><td>Boolean Expression</td><td>birthday = today() AND age &gt;= 21</td></tr>
 <tr><td>Aggregate Expression</td><td>MIN(salary), MAX(salary), SUM(salary), AVG(salary), COUNT(*)</td></tr>
-<tr><td>Scalar Function</td><td>CONCAT(first_name, &quot; &quot;, last_name)</td></tr>
+<tr><td>Scalar Function</td><td>CONCAT(first_name, " ", last_name)</td></tr>
 <tr><td>Aliased Expression</td><td>salary * 0.02 AS pay_increase</td></tr>
 </tbody></table>
 </div>
@@ -230,16 +230,16 @@
 }
 </code></pre>
 <h2 id="column-expressions"><a class="header" href="#column-expressions">Column Expressions</a></h2>
-<p>The <code>Column</code> expression simply represents a reference to a named column. The metadata for this expression is derived by finding the named column in the input and returning that column's metadata. Note that the term &quot;column&quot; here refers to a column produced by the input logical plan and could represent a column in a data source, or it could represent the result of an expression being evaluated against other inputs.</p>
+<p>The <code>Column</code> expression simply represents a reference to a named column. The metadata for this expression is derived by finding the named column in the input and returning that column's metadata. Note that the term "column" here refers to a column produced by the input logical plan and could represent a column in a data source, or it could represent the result of an expression being evaluated against other inputs.</p>
 <pre><code class="language-kotlin">class Column(val name: String): LogicalExpr {
 
   override fun toField(input: LogicalPlan): Field {
     return input.schema().fields.find { it.name == name } ?:
-      throw SQLException(&quot;No column named '$name'&quot;)
+      throw SQLException("No column named '$name'")
   }
 
   override fun toString(): String {
-    return &quot;#$name&quot;
+    return "#$name"
   }
 
 }
@@ -254,7 +254,7 @@
   }
 
   override fun toString(): String {
-    return &quot;'$str'&quot;
+    return "'$str'"
   }
 
 }
@@ -273,7 +273,7 @@
 }
 </code></pre>
 <h2 id="binary-expressions"><a class="header" href="#binary-expressions">Binary Expressions</a></h2>
-<p>Binary expressions are simply expressions that take two inputs. There are three categories of binary expressions that we will implement, and those are comparison expressions, Boolean expressions, and math expressions. Because the string representation is the same for all of these, we can use a common base class that provides the <code>toString</code> method. The variables &quot;l&quot; and &quot;r&quot; refer to the left and right inputs.</p>
+<p>Binary expressions are simply expressions that take two inputs. There are three categories of binary expressions that we will implement, and those are comparison expressions, Boolean expressions, and math expressions. Because the string representation is the same for all of these, we can use a common base class that provides the <code>toString</code> method. The variables "l" and "r" refer to the left and right inputs.</p>
 <pre><code class="language-kotlin">abstract class BinaryExpr(
     val name: String,
     val op: String,
@@ -281,7 +281,7 @@
     val r: LogicalExpr) : LogicalExpr {
 
   override fun toString(): String {
-    return &quot;$l $op $r&quot;
+    return "$l $op $r"
   }
 }
 </code></pre>
@@ -302,37 +302,37 @@
 <h2 id="comparison-expressions"><a class="header" href="#comparison-expressions">Comparison Expressions</a></h2>
 <pre><code class="language-kotlin">/** Equality (`=`) comparison */
 class Eq(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;eq&quot;, &quot;=&quot;, l, r)
+    : BooleanBinaryExpr("eq", "=", l, r)
 
 /** Inequality (`!=`) comparison */
 class Neq(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;neq&quot;, &quot;!=&quot;, l, r)
+    : BooleanBinaryExpr("neq", "!=", l, r)
 
 /** Greater than (`&gt;`) comparison */
 class Gt(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;gt&quot;, &quot;&gt;&quot;, l, r)
+    : BooleanBinaryExpr("gt", "&gt;", l, r)
 
 /** Greater than or equals (`&gt;=`) comparison */
 class GtEq(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;gteq&quot;, &quot;&gt;=&quot;, l, r)
+    : BooleanBinaryExpr("gteq", "&gt;=", l, r)
 
 /** Less than (`&lt;`) comparison */
 class Lt(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;lt&quot;, &quot;&lt;&quot;, l, r)
+    : BooleanBinaryExpr("lt", "&lt;", l, r)
 
 /** Less than or equals (`&lt;=`) comparison */
 class LtEq(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;lteq&quot;, &quot;&lt;=&quot;, l, r)
+    : BooleanBinaryExpr("lteq", "&lt;=", l, r)
 </code></pre>
 <h2 id="boolean-expressions"><a class="header" href="#boolean-expressions">Boolean Expressions</a></h2>
 <p>The base class also provides a concise way to implement the concrete Boolean logic expressions.</p>
 <pre><code class="language-kotlin">/** Logical AND */
 class And(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;and&quot;, &quot;AND&quot;, l, r)
+    : BooleanBinaryExpr("and", "AND", l, r)
 
 /** Logical OR */
 class Or(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;or&quot;, &quot;OR&quot;, l, r)
+    : BooleanBinaryExpr("or", "OR", l, r)
 </code></pre>
 <h2 id="math-expressions"><a class="header" href="#math-expressions">Math Expressions</a></h2>
 <p>Math expressions are another specialization of a binary expression. Math expressions typically operate on values of the same data type and produce a result of the same data type.</p>
@@ -343,16 +343,16 @@ class Or(l: LogicalExpr, r: LogicalExpr)
     r: LogicalExpr) : BinaryExpr(name, op, l, r) {
 
   override fun toField(input: LogicalPlan): Field {
-      return Field(&quot;mult&quot;, l.toField(input).dataType)
+      return Field("mult", l.toField(input).dataType)
   }
 
 }
 
-class Add(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;add&quot;, &quot;+&quot;, l, r)
-class Subtract(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;subtract&quot;, &quot;-&quot;, l, r)
-class Multiply(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;mult&quot;, &quot;*&quot;, l, r)
-class Divide(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;div&quot;, &quot;/&quot;, l, r)
-class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;mod&quot;, &quot;%&quot;, l, r)
+class Add(l: LogicalExpr, r: LogicalExpr) : MathExpr("add", "+", l, r)
+class Subtract(l: LogicalExpr, r: LogicalExpr) : MathExpr("subtract", "-", l, r)
+class Multiply(l: LogicalExpr, r: LogicalExpr) : MathExpr("mult", "*", l, r)
+class Divide(l: LogicalExpr, r: LogicalExpr) : MathExpr("div", "/", l, r)
+class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr("mod", "%", l, r)
 </code></pre>
 <h2 id="aggregate-expressions"><a class="header" href="#aggregate-expressions">Aggregate Expressions</a></h2>
 <p>Aggregate expressions perform an aggregate function such as <code>MIN</code>, <code>MAX</code>, <code>COUNT</code>, <code>SUM</code>, or <code>AVG</code> on an input expression.</p>
@@ -365,25 +365,25 @@ class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;mod&quot;, &quot;
   }
 
   override fun toString(): String {
-    return &quot;$name($expr)&quot;
+    return "$name($expr)"
   }
 }
 </code></pre>
 <p>For aggregate expressions where the aggregated data type is the same as the input type, we can simply extend this base class.</p>
-<pre><code class="language-kotlin">class Sum(input: LogicalExpr) : AggregateExpr(&quot;SUM&quot;, input)
-class Min(input: LogicalExpr) : AggregateExpr(&quot;MIN&quot;, input)
-class Max(input: LogicalExpr) : AggregateExpr(&quot;MAX&quot;, input)
-class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
+<pre><code class="language-kotlin">class Sum(input: LogicalExpr) : AggregateExpr("SUM", input)
+class Min(input: LogicalExpr) : AggregateExpr("MIN", input)
+class Max(input: LogicalExpr) : AggregateExpr("MAX", input)
+class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
 </code></pre>
-<p>For aggregate expressions where the data type is not dependent on the input type, we need to override the <code>toField</code> method. For example, the &quot;COUNT&quot; aggregate expression always produces an integer regardless of the data type of the values being counted.</p>
-<pre><code class="language-kotlin">class Count(input: LogicalExpr) : AggregateExpr(&quot;COUNT&quot;, input) {
+<p>For aggregate expressions where the data type is not dependent on the input type, we need to override the <code>toField</code> method. For example, the "COUNT" aggregate expression always produces an integer regardless of the data type of the values being counted.</p>
+<pre><code class="language-kotlin">class Count(input: LogicalExpr) : AggregateExpr("COUNT", input) {
 
   override fun toField(input: LogicalPlan): Field {
-    return Field(&quot;COUNT&quot;, ArrowTypes.Int32Type)
+    return Field("COUNT", ArrowTypes.Int32Type)
   }
 
   override fun toString(): String {
-    return &quot;COUNT($expr)&quot;
+    return "COUNT($expr)"
   }
 }
 </code></pre>
@@ -417,9 +417,9 @@ class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
 
   override fun toString(): String {
     return if (projection.isEmpty()) {
-      &quot;Scan: $path; projection=None&quot;
+      "Scan: $path; projection=None"
     } else {
-      &quot;Scan: $path; projection=$projection&quot;
+      "Scan: $path; projection=$projection"
     }
   }
 
@@ -440,9 +440,9 @@ class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
   }
 
   override fun toString(): String {
-    return &quot;Projection: ${ expr.map {
-        it.toString() }.joinToString(&quot;, &quot;)
-    }&quot;
+    return "Projection: ${ expr.map {
+        it.toString() }.joinToString(", ")
+    }"
   }
 }
 </code></pre>
@@ -462,7 +462,7 @@ class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
   }
 
   override fun toString(): String {
-    return &quot;Filter: $expr&quot;
+    return "Filter: $expr"
   }
 }
 </code></pre>
@@ -483,7 +483,7 @@ class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
   }
 
   override fun toString(): String {
-    return &quot;Aggregate: groupExpr=$groupExpr, aggregateExpr=$aggregateExpr&quot;
+    return "Aggregate: groupExpr=$groupExpr, aggregateExpr=$aggregateExpr"
   }
 }
 </code></pre>

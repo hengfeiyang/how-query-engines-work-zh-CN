@@ -185,21 +185,21 @@
 <p>Now that we have defined classes for a subset of logical plans, we can combine them programmatically.</p>
 <p>Here is some verbose code for building a plan for the query <code>SELECT * FROM employee WHERE state = 'CO'</code> against a CSV file containing the columns <code>id, first_name, last_name, state, job_title, salary</code>.</p>
 <pre><code class="language-kotlin">// create a plan to represent the data source
-val csv = CsvDataSource(&quot;employee.csv&quot;)
+val csv = CsvDataSource("employee.csv")
 
 // create a plan to represent the scan of the data source (FROM)
-val scan = Scan(&quot;employee&quot;, csv, listOf())
+val scan = Scan("employee", csv, listOf())
 
 // create a plan to represent the selection (WHERE)
-val filterExpr = Eq(Column(&quot;state&quot;), LiteralString(&quot;CO&quot;))
+val filterExpr = Eq(Column("state"), LiteralString("CO"))
 val selection = Selection(scan, filterExpr)
 
 // create a plan to represent the projection (SELECT)
-val projectionList = listOf(Column(&quot;id&quot;),
-                            Column(&quot;first_name&quot;),
-                            Column(&quot;last_name&quot;),
-                            Column(&quot;state&quot;),
-                            Column(&quot;salary&quot;))
+val projectionList = listOf(Column("id"),
+                            Column("first_name"),
+                            Column("last_name"),
+                            Column("state"),
+                            Column("salary"))
 val plan = Projection(selection, projectionList)
 
 // print the plan
@@ -213,14 +213,14 @@ println(format(plan))
 <p>The same code can also be written more concisely like this:</p>
 <pre><code class="language-kotlin">val plan = Projection(
   Selection(
-    Scan(&quot;employee&quot;, CsvDataSource(&quot;employee.csv&quot;), listOf()),
-    Eq(Column(3), LiteralString(&quot;CO&quot;))
+    Scan("employee", CsvDataSource("employee.csv"), listOf()),
+    Eq(Column(3), LiteralString("CO"))
   ),
-  listOf(Column(&quot;id&quot;),
-         Column(&quot;first_name&quot;),
-         Column(&quot;last_name&quot;),
-         Column(&quot;state&quot;),
-         Column(&quot;salary&quot;))
+  listOf(Column("id"),
+         Column("first_name"),
+         Column("last_name"),
+         Column("state"),
+         Column("salary"))
 )
 println(format(plan))
 </code></pre>
@@ -290,13 +290,13 @@ println(format(plan))
 <p>With this groundwork in place, we can now create a logical query plan using the context and the DataFrame API.</p>
 <pre><code class="language-kotlin">val ctx = ExecutionContext()
 
-val plan = ctx.csv(&quot;employee.csv&quot;)
-              .filter(Eq(Column(&quot;state&quot;), LiteralString(&quot;CO&quot;)))
-              .select(listOf(Column(&quot;id&quot;),
-                             Column(&quot;first_name&quot;),
-                             Column(&quot;last_name&quot;),
-                             Column(&quot;state&quot;),
-                             Column(&quot;salary&quot;)))
+val plan = ctx.csv("employee.csv")
+              .filter(Eq(Column("state"), LiteralString("CO")))
+              .select(listOf(Column("id"),
+                             Column("first_name"),
+                             Column("last_name"),
+                             Column("state"),
+                             Column("salary")))
 </code></pre>
 <p>This is much cleaner and more intuitive, but we can go a step further and add some convenience methods to make this a little more comprehensible. This is specific to Kotlin, but other languages have similar concepts.</p>
 <p>We can create some convenience methods for creating the supported expression objects.</p>
@@ -315,14 +315,14 @@ infix fun LogicalExpr.lteq(rhs: LogicalExpr): LogicalExpr { return LtEq(this, rh
 </code></pre>
 <p>With these convenience methods in place, we can now write expressive code to build our logical query plan.</p>
 <pre><code class="language-kotlin">val df = ctx.csv(employeeCsv)
-   .filter(col(&quot;state&quot;) eq lit(&quot;CO&quot;))
+   .filter(col("state") eq lit("CO"))
    .select(listOf(
-       col(&quot;id&quot;),
-       col(&quot;first_name&quot;),
-       col(&quot;last_name&quot;),
-       col(&quot;salary&quot;),
-       (col(&quot;salary&quot;) mult lit(0.1)) alias &quot;bonus&quot;))
-   .filter(col(&quot;bonus&quot;) gt lit(1000))
+       col("id"),
+       col("first_name"),
+       col("last_name"),
+       col("salary"),
+       (col("salary") mult lit(0.1)) alias "bonus"))
+   .filter(col("bonus") gt lit(1000))
 </code></pre>
 <p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>

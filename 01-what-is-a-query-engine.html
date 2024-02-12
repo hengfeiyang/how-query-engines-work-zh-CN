@@ -206,14 +206,14 @@ LIMIT 5;
 <p>以下示例演示了如何使用 Apache Spark 对 Parquet 数据集执行简单的聚合查询。Spark 的真正强大之处在于，该查询可以在笔记本电脑或数百台服务器的集群上运行，而无需更改代码。</p>
 <p><em>Apache Spark 使用 DataFrame 查询示例</em></p>
 <pre><code class="language-scala">val spark: SparkSession = SparkSession.builder
-  .appName(&quot;Example&quot;)
-  .master(&quot;local[*]&quot;)
+  .appName("Example")
+  .master("local[*]")
   .getOrCreate()
 
-val df = spark.read.parquet(&quot;/mnt/nyctaxi/parquet&quot;)
-  .groupBy(&quot;passenger_count&quot;)
-  .sum(&quot;fare_amount&quot;)
-  .orderBy(&quot;passenger_count&quot;)
+val df = spark.read.parquet("/mnt/nyctaxi/parquet")
+  .groupBy("passenger_count")
+  .sum("fare_amount")
+  .orderBy("passenger_count")
 
 df.show()
 </code></pre>

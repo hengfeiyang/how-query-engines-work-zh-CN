@@ -199,19 +199,19 @@ data class OperatorToken(val s: String) : Token
   }
 }
 </code></pre>
-<p>Given the input <code>&quot;SELECT a + b FROM c&quot;</code> we expect the output to be as follows:</p>
+<p>Given the input <code>"SELECT a + b FROM c"</code> we expect the output to be as follows:</p>
 <pre><code class="language-kotlin">listOf(
-  KeywordToken(&quot;SELECT&quot;),
-  IdentifierToken(&quot;a&quot;),
-  OperatorToken(&quot;+&quot;),
-  IdentifierToken(&quot;b&quot;),
-  KeywordToken(&quot;FROM&quot;),
-  IdentifierToken(&quot;c&quot;)
+  KeywordToken("SELECT"),
+  IdentifierToken("a"),
+  OperatorToken("+"),
+  IdentifierToken("b"),
+  KeywordToken("FROM"),
+  IdentifierToken("c")
 )
 </code></pre>
 <h2 id="pratt-parser"><a class="header" href="#pratt-parser">Pratt Parser</a></h2>
 <p>We are going to hand-code a SQL parser based on the <a href="https://tdop.github.io/">Top Down Operator Precedence</a> paper published by Vaughan R. Pratt in 1973. Although there are other approaches to building SQL parsers such as using Parser Generators and Parser Combinators, I have found Pratt's approach to work well and it results in code that is efficient, easy to comprehend, and easy to debug.</p>
-<p>Here is a bare-bones implementation of a Pratt parser. In my opinion, it is beautiful in its simplicity. Expression parsing is performed by a simple loop that parses a &quot;prefix&quot; expression followed by an optional &quot;infix&quot; expression and keeps doing this until the precedence changes in such a way that the parser recognizes that it has finished parsing the expression. Of course, the implementation of <code>parsePrefix</code> and <code>parseInfix</code> can recursively call back into the <code>parse</code> method and this is where it becomes very powerful.</p>
+<p>Here is a bare-bones implementation of a Pratt parser. In my opinion, it is beautiful in its simplicity. Expression parsing is performed by a simple loop that parses a "prefix" expression followed by an optional "infix" expression and keeps doing this until the precedence changes in such a way that the parser recognizes that it has finished parsing the expression. Of course, the implementation of <code>parsePrefix</code> and <code>parseInfix</code> can recursively call back into the <code>parse</code> method and this is where it becomes very powerful.</p>
 <pre><code class="language-kotlin">interface PrattParser {
 
   /** Parse an expression */
@@ -246,25 +246,25 @@ data class SqlIdentifier(val id: String) : SqlExpr {
 
 /** Binary expression */
 data class SqlBinaryExpr(val l: SqlExpr, val op: String, val r: SqlExpr) : SqlExpr {
-  override fun toString(): String = &quot;$l $op $r&quot;
+  override fun toString(): String = "$l $op $r"
 }
 
 /** SQL literal string */
 data class SqlString(val value: String) : SqlExpr {
-  override fun toString() = &quot;'$value'&quot;
+  override fun toString() = "'$value'"
 }
 </code></pre>
 <p>With these classes in place it is possible to represent the expression <code>foo = 'bar'</code> with the following code.</p>
-<pre><code class="language-kotlin">val sqlExpr = SqlBinaryExpr(SqlIdentifier(&quot;foo&quot;), &quot;=&quot;, SqlString(&quot;bar&quot;))
+<pre><code class="language-kotlin">val sqlExpr = SqlBinaryExpr(SqlIdentifier("foo"), "=", SqlString("bar"))
 </code></pre>
 <h2 id="parsing-sql-expressions"><a class="header" href="#parsing-sql-expressions">Parsing SQL Expressions</a></h2>
 <p>Let's walk through this approach for parsing a simple math expression such as <code>1 + 2 * 3</code>. This expression consists of the following tokens.</p>
 <pre><code class="language-kotlin">listOf(
-  LiteralLongToken(&quot;1&quot;),
-  OperatorToken(&quot;+&quot;),
-  LiteralLongToken(&quot;2&quot;),
-  OperatorToken(&quot;*&quot;),
-  LiteralLongToken(&quot;3&quot;)
+  LiteralLongToken("1"),
+  OperatorToken("+"),
+  LiteralLongToken("2"),
+  OperatorToken("*"),
+  LiteralLongToken("3")
 )
 </code></pre>
 <p>We need to create an implementation of the <code>PrattParser</code> trait and pass the tokens into the constructor. The tokens are wrapped in a <code>TokenStream</code> class that provides some convenience methods such as <code>next</code> for consuming the next token, and <code>peek</code> for when we want to look ahead without consuming a token.</p>
@@ -277,8 +277,8 @@ data class SqlString(val value: String) : SqlExpr {
   return when (token) {
     is OperatorToken -&gt; {
       when (token.s) {
-        &quot;+&quot;, &quot;-&quot; -&gt; 50
-        &quot;*&quot;, &quot;/&quot; -&gt; 60
+        "+", "-" -&gt; 50
+        "*", "/" -&gt; 60
         else -&gt; 0
       }
     }
@@ -291,7 +291,7 @@ data class SqlString(val value: String) : SqlExpr {
   val token = tokens.next() ?: return null
   return when (token) {
     is LiteralLongToken -&gt; SqlLong(token.s.toLong())
-    else -&gt; throw IllegalStateException(&quot;Unexpected token $token&quot;)
+    else -&gt; throw IllegalStateException("Unexpected token $token")
   }
 }
 </code></pre>
@@ -302,9 +302,9 @@ data class SqlString(val value: String) : SqlExpr {
     is OperatorToken -&gt; {
       tokens.next()
       SqlBinaryExpr(left, token.s, parse(precedence) ?:
-                    throw SQLException(&quot;Error parsing infix&quot;))
+                    throw SQLException("Error parsing infix"))
     }
-    else -&gt; throw IllegalStateException(&quot;Unexpected infix token $token&quot;)
+    else -&gt; throw IllegalStateException("Unexpected infix token $token")
   }
 }
 </code></pre>
@@ -317,8 +317,8 @@ Precedence:  [0] [50]  [0] [60]  [0]
 <p>The final result correctly represents the expression as <code>1 + (2 * 3)</code>.</p>
 <pre><code class="language-kotlin">SqlBinaryExpr(
     SqlLong(1),
-    &quot;+&quot;,
-    SqlBinaryExpr(SqlLong(2), &quot;*&quot;, SqlLong(3))
+    "+",
+    SqlBinaryExpr(SqlLong(2), "*", SqlLong(3))
 )
 </code></pre>
 <p><em>Example: Parsing <code>1 _ 2 + 3</code></em></p>
@@ -327,8 +327,8 @@ Precedence:  [0] [60]  [0] [50]  [0]
 </code></pre>
 <p>The final result correctly represents the expression as <code>(1 * 2) + 3</code>.</p>
 <pre><code class="language-kotlin">SqlBinaryExpr(
-    SqlBinaryExpr(SqlLong(1), &quot;*&quot;, SqlLong(2)),
-    &quot;+&quot;,
+    SqlBinaryExpr(SqlLong(1), "*", SqlLong(2)),
+    "+",
     SqlLong(3)
 )
 </code></pre>
@@ -359,7 +359,7 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
     Projection: #id, #first_name, #last_name, #salary/12 AS monthly_salary, #state
       Scan: table=employee
 </code></pre>
-<p>It is worth noting that we will build a &quot;Predicate Push Down&quot; query optimizer rule in a later chapter that will be able to optimize this plan and push the <code>state = 'CO'</code> part of the predicate further down in the plan so that it is before the projection.</p>
+<p>It is worth noting that we will build a "Predicate Push Down" query optimizer rule in a later chapter that will be able to optimize this plan and push the <code>state = 'CO'</code> part of the predicate further down in the plan so that it is before the projection.</p>
 <h2 id="translating-sql-expressions"><a class="header" href="#translating-sql-expressions">Translating SQL Expressions</a></h2>
 <p>Translating SQL expressions to logical expressions is fairly simple, as demonstrated in this example code.</p>
 <pre><code class="language-kotlin">private fun createLogicalExpr(expr: SqlExpr, input: DataFrame) : LogicalExpr {
@@ -374,22 +374,22 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
       val r = createLogicalExpr(expr.r, input)
       when(expr.op) {
         // comparison operators
-        &quot;=&quot; -&gt; Eq(l, r)
-        &quot;!=&quot; -&gt; Neq(l, r)
-        &quot;&gt;&quot; -&gt; Gt(l, r)
-        &quot;&gt;=&quot; -&gt; GtEq(l, r)
-        &quot;&lt;&quot; -&gt; Lt(l, r)
-        &quot;&lt;=&quot; -&gt; LtEq(l, r)
+        "=" -&gt; Eq(l, r)
+        "!=" -&gt; Neq(l, r)
+        "&gt;" -&gt; Gt(l, r)
+        "&gt;=" -&gt; GtEq(l, r)
+        "&lt;" -&gt; Lt(l, r)
+        "&lt;=" -&gt; LtEq(l, r)
         // boolean operators
-        &quot;AND&quot; -&gt; And(l, r)
-        &quot;OR&quot; -&gt; Or(l, r)
+        "AND" -&gt; And(l, r)
+        "OR" -&gt; Or(l, r)
         // math operators
-        &quot;+&quot; -&gt; Add(l, r)
-        &quot;-&quot; -&gt; Subtract(l, r)
-        &quot;*&quot; -&gt; Multiply(l, r)
-        &quot;/&quot; -&gt; Divide(l, r)
-        &quot;%&quot; -&gt; Modulus(l, r)
-        else -&gt; throw SQLException(&quot;Invalid operator ${expr.op}&quot;)
+        "+" -&gt; Add(l, r)
+        "-" -&gt; Subtract(l, r)
+        "*" -&gt; Multiply(l, r)
+        "/" -&gt; Divide(l, r)
+        "%" -&gt; Modulus(l, r)
+        else -&gt; throw SQLException("Invalid operator ${expr.op}")
       }
     }
 
@@ -403,7 +403,7 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
 
   // get a reference to the data source
   var df = tables[select.tableName] ?:
-      throw SQLException(&quot;No table named '${select.tableName}'&quot;)
+      throw SQLException("No table named '${select.tableName}'")
 
   val projectionExpr = select.projection.map { createLogicalExpr(it, df) }
 
@@ -435,7 +435,7 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
 
   // get a reference to the data source
   var df = tables[select.tableName] ?:
-    throw SQLException(&quot;No table named '${select.tableName}'&quot;)
+    throw SQLException("No table named '${select.tableName}'")
 
   // create the logical expressions for the projection
   val projectionExpr = select.projection.map { createLogicalExpr(it, df) }

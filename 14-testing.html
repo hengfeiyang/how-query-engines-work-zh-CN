@@ -214,13 +214,13 @@
     return RecordBatch(schema, root.fieldVectors.map { ArrowFieldVector(it) })
 }
 </code></pre>
-<p>Here is an example unit test for the &quot;greater than or equals&quot; (<code>&gt;=</code>) expression being evaluated against a record batch containing two columns containing double-precision floating point values.</p>
+<p>Here is an example unit test for the "greater than or equals" (<code>&gt;=</code>) expression being evaluated against a record batch containing two columns containing double-precision floating point values.</p>
 <pre><code class="language-kotlin">@Test
 fun `gteq doubles`() {
 
     val schema = Schema(listOf(
-            Field(&quot;a&quot;, ArrowTypes.DoubleType),
-            Field(&quot;b&quot;, ArrowTypes.DoubleType)
+            Field("a", ArrowTypes.DoubleType),
+            Field("b", ArrowTypes.DoubleType)
     ))
 
     val a: List&lt;Double&gt; = listOf(0.0, 1.0,

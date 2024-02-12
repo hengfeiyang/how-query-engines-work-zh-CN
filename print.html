@@ -232,14 +232,14 @@ LIMIT 5;
 <p>以下示例演示了如何使用 Apache Spark 对 Parquet 数据集执行简单的聚合查询。Spark 的真正强大之处在于，该查询可以在笔记本电脑或数百台服务器的集群上运行，而无需更改代码。</p>
 <p><em>Apache Spark 使用 DataFrame 查询示例</em></p>
 <pre><code class="language-scala">val spark: SparkSession = SparkSession.builder
-  .appName(&quot;Example&quot;)
-  .master(&quot;local[*]&quot;)
+  .appName("Example")
+  .master("local[*]")
   .getOrCreate()
 
-val df = spark.read.parquet(&quot;/mnt/nyctaxi/parquet&quot;)
-  .groupBy(&quot;passenger_count&quot;)
-  .sum(&quot;fare_amount&quot;)
-  .orderBy(&quot;passenger_count&quot;)
+val df = spark.read.parquet("/mnt/nyctaxi/parquet")
+  .groupBy("passenger_count")
+  .sum("fare_amount")
+  .orderBy("passenger_count")
 
 df.show()
 </code></pre>
@@ -317,27 +317,27 @@ df.show()
 <p>C++ 实现正在进行添加查询引擎的工作，当前的重点是实现高效的计算原语和数据集 API。</p>
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="choosing-a-type-system"><a class="header" href="#choosing-a-type-system">Choosing a Type System</a></h1>
-<p><em>The source code discussed in this chapter can be found in the <code>datatypes</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
-<p>The first step in building a query engine is to choose a type system to represent the different types of data that the query engine will be processing. One option would be to invent a proprietary type system specific to the query engine. Another option is to use the type system of the data source that the query engine is designed to query from.</p>
-<p>If the query engine is going to support querying multiple data sources, which is often the case, then there is likely some conversion required between each supported data source and the query engine's type system, and it will be important to use a type system capable of representing all the data types of all the supported data sources.</p>
-<h2 id="row-based-or-columnar"><a class="header" href="#row-based-or-columnar">Row-Based or Columnar?</a></h2>
-<p>An important consideration is whether the query engine will process data row-by-row or whether it will represent data in a columnar format.</p>
-<p>Many of today's query engines are based on the <a href="https://paperhub.s3.amazonaws.com/dace52a42c07f7f8348b08dc2b186061.pdf">Volcano Query Planner</a> where each step in the physical plan is essentially an iterator over rows. This is a simple model to implement but tends to introduce per-row overheads that add up pretty quickly when running a query against billions of rows. This overhead can be reduced by instead iterating over batches of data. Furthermore, if these batches represent columnar data rather than rows, it is possible to use &quot;vectorized processing&quot; and take advantage of SIMD (Single Instruction Multiple Data) to process multiple values within a column with a single CPU instruction. This concept can be taken even further by leveraging GPUs to process much larger quantities of data in parallel.</p>
-<h2 id="interoperability"><a class="header" href="#interoperability">Interoperability</a></h2>
-<p>Another consideration is that we may want to make our query engine accessible from multiple programming languages. It is common for users of query engines to use languages such as Python, R, or Java. We may also want to build ODBC or JDBC drivers to make it easy to build integrations.</p>
-<p>Given these requirements, it would be good to find an industry standard for representing columnar data and for exchanging this data efficiently between processes.</p>
-<p>It will probably come as little surprise that I believe that Apache Arrow provides an ideal foundation.</p>
-<h2 id="type-system"><a class="header" href="#type-system">Type System</a></h2>
-<p>We will use Apache Arrow as the basis for our type system. The following Arrow classes are used to represent schema, fields, and data types.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="选择一个类型系统"><a class="header" href="#选择一个类型系统">选择一个类型系统</a></h1>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>datatypes</code> 模块中找到。</em></p>
+<p>构建查询引擎的第一步是选择一个类型系统来表示查询引擎将要处理的不同类型的数据。一种选择是发明一种专门针对查询引擎的专有类型系统。另一种选择是使用查询引擎索要查询的数据源的类型系统。</p>
+<p>如果查询引擎要支持查询多个数据源（通常是这种情况），那么每个支持的数据源和查询引擎的类型系统之间可能需要进行一些转换，因此使用一个能够代表所有支持的数据源的所有数据类型的类型系统将非常重要。</p>
+<h2 id="基于行还是基于列"><a class="header" href="#基于行还是基于列">基于行还是基于列？</a></h2>
+<p>一个重要的考虑因素是查询引擎将逐行处理数据还是以列式格式表示数据。</p>
+<p>如今许多的查询引擎都是基于 <a href="https://paperhub.s3.amazonaws.com/dace52a42c07f7f8348b08dc2b186061.pdf">Volcano Query Planner</a>，其在物理计划中每个步骤本质上都是对行进行迭代。这种模型易于实现，但在对数十亿行运行查询时往往会导致每行开销迅速增加。通过对数据进行批量迭代，可以减少这种开销。此外，如果这些批量数据以列的方式而不是行的方式表示数据，那么就可以使用 “向量化处理” 并利用 SIMD (单指令多数据) 的优势，用单条 CPU 指令处理一列中的多个值。这个概念还可以更进一步，利用 GPU 来并行处理更大量的数据。</p>
+<h2 id="互操作性"><a class="header" href="#互操作性">互操作性</a></h2>
+<p>另一个考虑因素是我们可能希望使我们的查询引擎可以通过多种编程语言访问。查询引擎的用户通常使用 Python、R 或 Java 等语言。我们可能还希望构建 ODBC 或 JDBC 驱动程序，以便轻松构建集成。</p>
+<p>考虑到这些需求，最好找到一个行业标准来表示列式数据并高效地在进程之间交换这些数据。</p>
+<p>我相信 Apache Arrow 提供了理想的基础，这一点可能并不奇怪。</p>
+<h2 id="类型系统"><a class="header" href="#类型系统">类型系统</a></h2>
+<p>我们将使用 Apache Arrow 作为我们类型系统的基础。以下 Arrow 类用于表示结构、字段和数据类型。</p>
 <ul>
-<li><em>Schema</em> provides metadata for a data source or the results from a query. A schema consists of one or more fields.</li>
-<li><em>Field</em> provides the name and data type for a field within a schema, and specifies whether it allows null values or not.</li>
-<li><em>FieldVector</em> provides columnar storage for data for a field.</li>
-<li><em>ArrowType</em> represents a data type.</li>
+<li><em>Schema</em> 为数据源或查询结果提供元数据，结构由一个或多个字段组成。</li>
+<li><em>Field</em> 为结构中字段的名称和数据类型，并指定它是否允许空值。</li>
+<li><em>FieldVector</em> 为字段数据提供列式存储。</li>
+<li><em>ArrowType</em> 表示一种数据类型。</li>
 </ul>
-<p>KQuery introduces some additional classes and helpers as an abstraction over the Apache Arrow type system.</p>
-<p>KQuery provides constants that can be referenced for the supported Arrow data types</p>
+<p>KQuery 引入了一些额外的类和助手作为对 Apache Arrow 类型系统的抽象。</p>
+<p>KQuery 为受支持的 Arrow 数据类型提供了可引用的常量。</p>
 <pre><code class="language-kotlin">object ArrowTypes {
     val BooleanType = ArrowType.Bool()
     val Int8Type = ArrowType.Int(8, true)
@@ -353,14 +353,14 @@ df.show()
     val StringType = ArrowType.Utf8()
 }
 </code></pre>
-<p>Rather than working directly with <code>FieldVector</code>, KQuery introduces a <code>ColumnVector</code> interface as an abstraction to provide more convenient accessor methods, avoiding the need to case to a specific <code>FieldVector</code> implementation for each data type.</p>
+<p>KQuery 并没有直接使用 <code>FieldVector</code>，而是引入了一个 <code>ColumnVector</code> 接口作为抽象，以提供更方便的访问方法，从而避免了为每种数据类型都使用特定的 <code>FieldVector</code> 实现。</p>
 <pre><code class="language-kotlin">interface ColumnVector {
   fun getType(): ArrowType
   fun getValue(i: Int) : Any?
   fun size(): Int
 }
 </code></pre>
-<p>This abstraction also makes it possible to have an implementation for scalar values, avoiding the need to create and populate a <code>FieldVector</code> with a literal value repeated for every index in the column.</p>
+<p>这种抽象也使得标量值的实现成为可能，从而避免了用字面值为列中每个索引重复创建和填入 <code>FieldVector</code>。</p>
 <pre><code class="language-kotlin">class LiteralValueVector(
     val arrowType: ArrowType,
     val value: Any?,
@@ -383,7 +383,7 @@ df.show()
 
 }
 </code></pre>
-<p>KQuery also provides a <code>RecordBatch</code> class to represent a batch of columnar data.</p>
+<p>KQuery 还提供了一个 <code>RecordBatch</code> 类来表示一批列式数据。</p>
 <pre><code class="language-kotlin">class RecordBatch(val schema: Schema, val fields: List&lt;ColumnVector&gt;) {
 
   fun rowCount() = fields.first().size()
@@ -397,13 +397,13 @@ df.show()
 
 }
 </code></pre>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="data-sources"><a class="header" href="#data-sources">Data Sources</a></h1>
 <p><em>The source code discussed in this chapter can be found in the <code>datasource</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
 <p>A query engine is of little use without a data source to read from and we want the ability to support multiple data sources, so it is important to create an interface that the query engine can use to interact with data sources. This also allows users to use our query engine with their custom data sources. Data sources are often files or databases but could also be in-memory objects.</p>
 <h2 id="data-source-interface"><a class="header" href="#data-source-interface">Data Source Interface</a></h2>
-<p>During query planning, it is important to understand the schema of the data source so that the query plan can be validated to make sure that referenced columns exist and that data types are compatible with the expressions being used to reference them. In some cases, the schema might not be available, because some data sources do not have a fixed schema and are generally referred to as &quot;schema-less&quot;. JSON documents are one example of a schema-less data source.</p>
+<p>During query planning, it is important to understand the schema of the data source so that the query plan can be validated to make sure that referenced columns exist and that data types are compatible with the expressions being used to reference them. In some cases, the schema might not be available, because some data sources do not have a fixed schema and are generally referred to as "schema-less". JSON documents are one example of a schema-less data source.</p>
 <p>During query execution, we need the ability to fetch data from the data source and need to be able to specify which columns to load into memory for efficiency. There is no sense loading columns into memory if the query doesn't reference them.</p>
 <p><em>KQuery DataSource Interface</em></p>
 <pre><code class="language-kotlin">interface DataSource {
@@ -418,14 +418,14 @@ df.show()
 <h2 id="data-source-examples"><a class="header" href="#data-source-examples">Data Source Examples</a></h2>
 <p>There are a number of data sources that are often encountered in data science or analytics.</p>
 <h3 id="comma-separated-values-csv"><a class="header" href="#comma-separated-values-csv">Comma-Separated Values (CSV)</a></h3>
-<p>CSV files are text files with one record per line and fields are separated with commas, hence the name &quot;Comma Separated Values&quot;. CSV files do not contain schema information (other than optional column names on the first line in the file) although it is possible to derive the schema by reading the file first. This can be an expensive operation.</p>
+<p>CSV files are text files with one record per line and fields are separated with commas, hence the name "Comma Separated Values". CSV files do not contain schema information (other than optional column names on the first line in the file) although it is possible to derive the schema by reading the file first. This can be an expensive operation.</p>
 <h3 id="json"><a class="header" href="#json">JSON</a></h3>
 <p>The JavaScript Object Notation format (JSON) is another popular text-based file format. Unlike CSV files, JSON files are structured and can store complex nested data types.</p>
 <h3 id="parquet"><a class="header" href="#parquet">Parquet</a></h3>
 <p>Parquet was created to provide a compressed, efficient columnar data representation and is a popular file format in the Hadoop ecosystem. Parquet is built from the ground up with complex nested data structures in mind, and uses the <a href="https://github.com/julienledem/redelm/wiki/The-striping-and-assembly-algorithms-from-the-Dremel-paper">record shredding and assembly algorithm</a> described in the Dremel paper.</p>
-<p>Parquet files contain schema information and data is stored in batches (referred to as &quot;row groups&quot;) where each batch consists of columns. The row groups can contain compressed data and can also contain optional metadata such as minimum and maximum values for each column. Query engines can be optimised to use this metadata to determine when row groups can be skipped during a scan.</p>
+<p>Parquet files contain schema information and data is stored in batches (referred to as "row groups") where each batch consists of columns. The row groups can contain compressed data and can also contain optional metadata such as minimum and maximum values for each column. Query engines can be optimised to use this metadata to determine when row groups can be skipped during a scan.</p>
 <h3 id="orc"><a class="header" href="#orc">Orc</a></h3>
-<p>The Optimized Row Columnar (Orc) format is similar to Parquet. Data is stored in columnar batches called &quot;stripes&quot;.</p>
+<p>The Optimized Row Columnar (Orc) format is similar to Parquet. Data is stored in columnar batches called "stripes".</p>
 <p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="logical-plans--expressions"><a class="header" href="#logical-plans--expressions">Logical Plans &amp; Expressions</a></h1>
@@ -441,8 +441,8 @@ df.show()
 <p>We can implement a simple recursive helper function to format a logical plan.</p>
 <pre><code class="language-kotlin">fun format(plan: LogicalPlan, indent: Int = 0): String {
   val b = StringBuilder()
-  0.rangeTo(indent).forEach { b.append(&quot;\t&quot;) }
-  b.append(plan.toString()).append(&quot;\n&quot;)
+  0.rangeTo(indent).forEach { b.append("\t") }
+  b.append(plan.toString()).append("\n")
   plan.children().forEach { b.append(format(it, indent+1)) }
   return b.toString()
 }
@@ -456,18 +456,18 @@ df.show()
 <p>It is sometimes desirable to be able to serialize query plans so that they can easily be transferred to another process. It is good practice to add serialization early on as a precaution against accidentally referencing data structures that cannot be serialized (such as file handles or database connections).</p>
 <p>One approach would be to use the implementation languages' default mechanism for serializing data structures to/from a format such as JSON. In Java, the Jackson library could be used. Kotlin has the <code>kotlinx.serialization</code> library, and Rust has a serde crate, for example.</p>
 <p>Another option would be to define a language-agnostic serialization format using Avro, Thrift, or Protocol Buffers and then write code to translate between this format and the language-specific implementation.</p>
-<p>Since publishing the first edition of this book, a new standard named <a href="https://substrait.io/">&quot;substrait&quot;</a> has emerged, with the goal of providing cross-language serialization for relational algebra. I am excited about this project and predict that it will become the de-facto standard for representing query plans and open up many integration possibilities. For example, it would be possible to use a mature Java-based query planner such as Apache Calcite, serialize the plan in Substrait format, and then execute the plan in a query engine implemented in a lower-level language, such as C++ or Rust. For more information, visit https://substrait.io/.</p>
+<p>Since publishing the first edition of this book, a new standard named <a href="https://substrait.io/">"substrait"</a> has emerged, with the goal of providing cross-language serialization for relational algebra. I am excited about this project and predict that it will become the de-facto standard for representing query plans and open up many integration possibilities. For example, it would be possible to use a mature Java-based query planner such as Apache Calcite, serialize the plan in Substrait format, and then execute the plan in a query engine implemented in a lower-level language, such as C++ or Rust. For more information, visit https://substrait.io/.</p>
 <h2 id="logical-expressions"><a class="header" href="#logical-expressions">Logical Expressions</a></h2>
 <p>One of the fundamental building blocks of a query plan is the concept of an expression that can be evaluated against data at runtime.</p>
 <p>Here are some examples of expressions that are typically supported in query engines.</p>
 <div class="table-wrapper"><table><thead><tr><th>Expression</th><th>Examples</th></tr></thead><tbody>
-<tr><td>Literal Value</td><td>&quot;hello&quot;, 12.34</td></tr>
+<tr><td>Literal Value</td><td>"hello", 12.34</td></tr>
 <tr><td>Column Reference</td><td>user_id, first_name, last_name</td></tr>
 <tr><td>Math Expression</td><td>salary * state_tax</td></tr>
 <tr><td>Comparison Expression</td><td>x &gt;= y</td></tr>
 <tr><td>Boolean Expression</td><td>birthday = today() AND age &gt;= 21</td></tr>
 <tr><td>Aggregate Expression</td><td>MIN(salary), MAX(salary), SUM(salary), AVG(salary), COUNT(*)</td></tr>
-<tr><td>Scalar Function</td><td>CONCAT(first_name, &quot; &quot;, last_name)</td></tr>
+<tr><td>Scalar Function</td><td>CONCAT(first_name, " ", last_name)</td></tr>
 <tr><td>Aliased Expression</td><td>salary * 0.02 AS pay_increase</td></tr>
 </tbody></table>
 </div>
@@ -479,16 +479,16 @@ df.show()
 }
 </code></pre>
 <h2 id="column-expressions"><a class="header" href="#column-expressions">Column Expressions</a></h2>
-<p>The <code>Column</code> expression simply represents a reference to a named column. The metadata for this expression is derived by finding the named column in the input and returning that column's metadata. Note that the term &quot;column&quot; here refers to a column produced by the input logical plan and could represent a column in a data source, or it could represent the result of an expression being evaluated against other inputs.</p>
+<p>The <code>Column</code> expression simply represents a reference to a named column. The metadata for this expression is derived by finding the named column in the input and returning that column's metadata. Note that the term "column" here refers to a column produced by the input logical plan and could represent a column in a data source, or it could represent the result of an expression being evaluated against other inputs.</p>
 <pre><code class="language-kotlin">class Column(val name: String): LogicalExpr {
 
   override fun toField(input: LogicalPlan): Field {
     return input.schema().fields.find { it.name == name } ?:
-      throw SQLException(&quot;No column named '$name'&quot;)
+      throw SQLException("No column named '$name'")
   }
 
   override fun toString(): String {
-    return &quot;#$name&quot;
+    return "#$name"
   }
 
 }
@@ -503,7 +503,7 @@ df.show()
   }
 
   override fun toString(): String {
-    return &quot;'$str'&quot;
+    return "'$str'"
   }
 
 }
@@ -522,7 +522,7 @@ df.show()
 }
 </code></pre>
 <h2 id="binary-expressions"><a class="header" href="#binary-expressions">Binary Expressions</a></h2>
-<p>Binary expressions are simply expressions that take two inputs. There are three categories of binary expressions that we will implement, and those are comparison expressions, Boolean expressions, and math expressions. Because the string representation is the same for all of these, we can use a common base class that provides the <code>toString</code> method. The variables &quot;l&quot; and &quot;r&quot; refer to the left and right inputs.</p>
+<p>Binary expressions are simply expressions that take two inputs. There are three categories of binary expressions that we will implement, and those are comparison expressions, Boolean expressions, and math expressions. Because the string representation is the same for all of these, we can use a common base class that provides the <code>toString</code> method. The variables "l" and "r" refer to the left and right inputs.</p>
 <pre><code class="language-kotlin">abstract class BinaryExpr(
     val name: String,
     val op: String,
@@ -530,7 +530,7 @@ df.show()
     val r: LogicalExpr) : LogicalExpr {
 
   override fun toString(): String {
-    return &quot;$l $op $r&quot;
+    return "$l $op $r"
   }
 }
 </code></pre>
@@ -551,37 +551,37 @@ df.show()
 <h2 id="comparison-expressions"><a class="header" href="#comparison-expressions">Comparison Expressions</a></h2>
 <pre><code class="language-kotlin">/** Equality (`=`) comparison */
 class Eq(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;eq&quot;, &quot;=&quot;, l, r)
+    : BooleanBinaryExpr("eq", "=", l, r)
 
 /** Inequality (`!=`) comparison */
 class Neq(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;neq&quot;, &quot;!=&quot;, l, r)
+    : BooleanBinaryExpr("neq", "!=", l, r)
 
 /** Greater than (`&gt;`) comparison */
 class Gt(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;gt&quot;, &quot;&gt;&quot;, l, r)
+    : BooleanBinaryExpr("gt", "&gt;", l, r)
 
 /** Greater than or equals (`&gt;=`) comparison */
 class GtEq(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;gteq&quot;, &quot;&gt;=&quot;, l, r)
+    : BooleanBinaryExpr("gteq", "&gt;=", l, r)
 
 /** Less than (`&lt;`) comparison */
 class Lt(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;lt&quot;, &quot;&lt;&quot;, l, r)
+    : BooleanBinaryExpr("lt", "&lt;", l, r)
 
 /** Less than or equals (`&lt;=`) comparison */
 class LtEq(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;lteq&quot;, &quot;&lt;=&quot;, l, r)
+    : BooleanBinaryExpr("lteq", "&lt;=", l, r)
 </code></pre>
 <h2 id="boolean-expressions"><a class="header" href="#boolean-expressions">Boolean Expressions</a></h2>
 <p>The base class also provides a concise way to implement the concrete Boolean logic expressions.</p>
 <pre><code class="language-kotlin">/** Logical AND */
 class And(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;and&quot;, &quot;AND&quot;, l, r)
+    : BooleanBinaryExpr("and", "AND", l, r)
 
 /** Logical OR */
 class Or(l: LogicalExpr, r: LogicalExpr)
-    : BooleanBinaryExpr(&quot;or&quot;, &quot;OR&quot;, l, r)
+    : BooleanBinaryExpr("or", "OR", l, r)
 </code></pre>
 <h2 id="math-expressions"><a class="header" href="#math-expressions">Math Expressions</a></h2>
 <p>Math expressions are another specialization of a binary expression. Math expressions typically operate on values of the same data type and produce a result of the same data type.</p>
@@ -592,16 +592,16 @@ class Or(l: LogicalExpr, r: LogicalExpr)
     r: LogicalExpr) : BinaryExpr(name, op, l, r) {
 
   override fun toField(input: LogicalPlan): Field {
-      return Field(&quot;mult&quot;, l.toField(input).dataType)
+      return Field("mult", l.toField(input).dataType)
   }
 
 }
 
-class Add(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;add&quot;, &quot;+&quot;, l, r)
-class Subtract(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;subtract&quot;, &quot;-&quot;, l, r)
-class Multiply(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;mult&quot;, &quot;*&quot;, l, r)
-class Divide(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;div&quot;, &quot;/&quot;, l, r)
-class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;mod&quot;, &quot;%&quot;, l, r)
+class Add(l: LogicalExpr, r: LogicalExpr) : MathExpr("add", "+", l, r)
+class Subtract(l: LogicalExpr, r: LogicalExpr) : MathExpr("subtract", "-", l, r)
+class Multiply(l: LogicalExpr, r: LogicalExpr) : MathExpr("mult", "*", l, r)
+class Divide(l: LogicalExpr, r: LogicalExpr) : MathExpr("div", "/", l, r)
+class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr("mod", "%", l, r)
 </code></pre>
 <h2 id="aggregate-expressions"><a class="header" href="#aggregate-expressions">Aggregate Expressions</a></h2>
 <p>Aggregate expressions perform an aggregate function such as <code>MIN</code>, <code>MAX</code>, <code>COUNT</code>, <code>SUM</code>, or <code>AVG</code> on an input expression.</p>
@@ -614,25 +614,25 @@ class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr(&quot;mod&quot;, &quot;
   }
 
   override fun toString(): String {
-    return &quot;$name($expr)&quot;
+    return "$name($expr)"
   }
 }
 </code></pre>
 <p>For aggregate expressions where the aggregated data type is the same as the input type, we can simply extend this base class.</p>
-<pre><code class="language-kotlin">class Sum(input: LogicalExpr) : AggregateExpr(&quot;SUM&quot;, input)
-class Min(input: LogicalExpr) : AggregateExpr(&quot;MIN&quot;, input)
-class Max(input: LogicalExpr) : AggregateExpr(&quot;MAX&quot;, input)
-class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
+<pre><code class="language-kotlin">class Sum(input: LogicalExpr) : AggregateExpr("SUM", input)
+class Min(input: LogicalExpr) : AggregateExpr("MIN", input)
+class Max(input: LogicalExpr) : AggregateExpr("MAX", input)
+class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
 </code></pre>
-<p>For aggregate expressions where the data type is not dependent on the input type, we need to override the <code>toField</code> method. For example, the &quot;COUNT&quot; aggregate expression always produces an integer regardless of the data type of the values being counted.</p>
-<pre><code class="language-kotlin">class Count(input: LogicalExpr) : AggregateExpr(&quot;COUNT&quot;, input) {
+<p>For aggregate expressions where the data type is not dependent on the input type, we need to override the <code>toField</code> method. For example, the "COUNT" aggregate expression always produces an integer regardless of the data type of the values being counted.</p>
+<pre><code class="language-kotlin">class Count(input: LogicalExpr) : AggregateExpr("COUNT", input) {
 
   override fun toField(input: LogicalPlan): Field {
-    return Field(&quot;COUNT&quot;, ArrowTypes.Int32Type)
+    return Field("COUNT", ArrowTypes.Int32Type)
   }
 
   override fun toString(): String {
-    return &quot;COUNT($expr)&quot;
+    return "COUNT($expr)"
   }
 }
 </code></pre>
@@ -666,9 +666,9 @@ class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
 
   override fun toString(): String {
     return if (projection.isEmpty()) {
-      &quot;Scan: $path; projection=None&quot;
+      "Scan: $path; projection=None"
     } else {
-      &quot;Scan: $path; projection=$projection&quot;
+      "Scan: $path; projection=$projection"
     }
   }
 
@@ -689,9 +689,9 @@ class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
   }
 
   override fun toString(): String {
-    return &quot;Projection: ${ expr.map {
-        it.toString() }.joinToString(&quot;, &quot;)
-    }&quot;
+    return "Projection: ${ expr.map {
+        it.toString() }.joinToString(", ")
+    }"
   }
 }
 </code></pre>
@@ -711,7 +711,7 @@ class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
   }
 
   override fun toString(): String {
-    return &quot;Filter: $expr&quot;
+    return "Filter: $expr"
   }
 }
 </code></pre>
@@ -732,7 +732,7 @@ class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
   }
 
   override fun toString(): String {
-    return &quot;Aggregate: groupExpr=$groupExpr, aggregateExpr=$aggregateExpr&quot;
+    return "Aggregate: groupExpr=$groupExpr, aggregateExpr=$aggregateExpr"
   }
 }
 </code></pre>
@@ -745,21 +745,21 @@ class Avg(input: LogicalExpr) : AggregateExpr(&quot;AVG&quot;, input)
 <p>Now that we have defined classes for a subset of logical plans, we can combine them programmatically.</p>
 <p>Here is some verbose code for building a plan for the query <code>SELECT * FROM employee WHERE state = 'CO'</code> against a CSV file containing the columns <code>id, first_name, last_name, state, job_title, salary</code>.</p>
 <pre><code class="language-kotlin">// create a plan to represent the data source
-val csv = CsvDataSource(&quot;employee.csv&quot;)
+val csv = CsvDataSource("employee.csv")
 
 // create a plan to represent the scan of the data source (FROM)
-val scan = Scan(&quot;employee&quot;, csv, listOf())
+val scan = Scan("employee", csv, listOf())
 
 // create a plan to represent the selection (WHERE)
-val filterExpr = Eq(Column(&quot;state&quot;), LiteralString(&quot;CO&quot;))
+val filterExpr = Eq(Column("state"), LiteralString("CO"))
 val selection = Selection(scan, filterExpr)
 
 // create a plan to represent the projection (SELECT)
-val projectionList = listOf(Column(&quot;id&quot;),
-                            Column(&quot;first_name&quot;),
-                            Column(&quot;last_name&quot;),
-                            Column(&quot;state&quot;),
-                            Column(&quot;salary&quot;))
+val projectionList = listOf(Column("id"),
+                            Column("first_name"),
+                            Column("last_name"),
+                            Column("state"),
+                            Column("salary"))
 val plan = Projection(selection, projectionList)
 
 // print the plan
@@ -773,14 +773,14 @@ println(format(plan))
 <p>The same code can also be written more concisely like this:</p>
 <pre><code class="language-kotlin">val plan = Projection(
   Selection(
-    Scan(&quot;employee&quot;, CsvDataSource(&quot;employee.csv&quot;), listOf()),
-    Eq(Column(3), LiteralString(&quot;CO&quot;))
+    Scan("employee", CsvDataSource("employee.csv"), listOf()),
+    Eq(Column(3), LiteralString("CO"))
   ),
-  listOf(Column(&quot;id&quot;),
-         Column(&quot;first_name&quot;),
-         Column(&quot;last_name&quot;),
-         Column(&quot;state&quot;),
-         Column(&quot;salary&quot;))
+  listOf(Column("id"),
+         Column("first_name"),
+         Column("last_name"),
+         Column("state"),
+         Column("salary"))
 )
 println(format(plan))
 </code></pre>
@@ -850,13 +850,13 @@ println(format(plan))
 <p>With this groundwork in place, we can now create a logical query plan using the context and the DataFrame API.</p>
 <pre><code class="language-kotlin">val ctx = ExecutionContext()
 
-val plan = ctx.csv(&quot;employee.csv&quot;)
-              .filter(Eq(Column(&quot;state&quot;), LiteralString(&quot;CO&quot;)))
-              .select(listOf(Column(&quot;id&quot;),
-                             Column(&quot;first_name&quot;),
-                             Column(&quot;last_name&quot;),
-                             Column(&quot;state&quot;),
-                             Column(&quot;salary&quot;)))
+val plan = ctx.csv("employee.csv")
+              .filter(Eq(Column("state"), LiteralString("CO")))
+              .select(listOf(Column("id"),
+                             Column("first_name"),
+                             Column("last_name"),
+                             Column("state"),
+                             Column("salary")))
 </code></pre>
 <p>This is much cleaner and more intuitive, but we can go a step further and add some convenience methods to make this a little more comprehensible. This is specific to Kotlin, but other languages have similar concepts.</p>
 <p>We can create some convenience methods for creating the supported expression objects.</p>
@@ -875,14 +875,14 @@ infix fun LogicalExpr.lteq(rhs: LogicalExpr): LogicalExpr { return LtEq(this, rh
 </code></pre>
 <p>With these convenience methods in place, we can now write expressive code to build our logical query plan.</p>
 <pre><code class="language-kotlin">val df = ctx.csv(employeeCsv)
-   .filter(col(&quot;state&quot;) eq lit(&quot;CO&quot;))
+   .filter(col("state") eq lit("CO"))
    .select(listOf(
-       col(&quot;id&quot;),
-       col(&quot;first_name&quot;),
-       col(&quot;last_name&quot;),
-       col(&quot;salary&quot;),
-       (col(&quot;salary&quot;) mult lit(0.1)) alias &quot;bonus&quot;))
-   .filter(col(&quot;bonus&quot;) gt lit(1000))
+       col("id"),
+       col("first_name"),
+       col("last_name"),
+       col("salary"),
+       (col("salary") mult lit(0.1)) alias "bonus"))
+   .filter(col("bonus") gt lit(1000))
 </code></pre>
 <p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
@@ -918,7 +918,7 @@ infix fun LogicalExpr.lteq(rhs: LogicalExpr): LogicalExpr { return LtEq(this, rh
   }
 
   override fun toString(): String {
-    return &quot;#$i&quot;
+    return "#$i"
   }
 }
 </code></pre>
@@ -980,8 +980,8 @@ class LiteralStringExpression(val value: String) : Expression {
     assert(ll.size() == rr.size())
     if (ll.getType() != rr.getType()) {
       throw IllegalStateException(
-          &quot;Binary expression operands do not have the same type: &quot; +
-          &quot;${ll.getType()} != ${rr.getType()}&quot;)
+          "Binary expression operands do not have the same type: " +
+          "${ll.getType()} != ${rr.getType()}")
     }
     return evaluate(ll, rr)
   }
@@ -1005,7 +1005,7 @@ class LiteralStringExpression(val value: String) : Expression {
       ArrowTypes.DoubleType -&gt; (l as Double) == (r as Double)
       ArrowTypes.StringType -&gt; toString(l) == toString(r)
       else -&gt; throw IllegalStateException(
-          &quot;Unsupported data type in comparison expression: $arrowType&quot;)
+          "Unsupported data type in comparison expression: $arrowType")
     }
   }
 }
@@ -1042,12 +1042,12 @@ class LiteralStringExpression(val value: String) : Expression {
         ArrowTypes.FloatType -&gt; (l as Float) + (r as Float)
         ArrowTypes.DoubleType -&gt; (l as Double) + (r as Double)
         else -&gt; throw IllegalStateException(
-            &quot;Unsupported data type in math expression: $arrowType&quot;)
+            "Unsupported data type in math expression: $arrowType")
       }
   }
 
   override fun toString(): String {
-    return &quot;$l+$r&quot;
+    return "$l+$r"
   }
 }
 </code></pre>
@@ -1076,7 +1076,7 @@ interface Accumulator {
   }
 
   override fun toString(): String {
-    return &quot;MAX($expr)&quot;
+    return "MAX($expr)"
   }
 }
 </code></pre>
@@ -1099,7 +1099,7 @@ interface Accumulator {
           is Double -&gt; value &gt; this.value as Double
           is String -&gt; value &gt; this.value as String
           else -&gt; throw UnsupportedOperationException(
-            &quot;MAX is not implemented for data type: ${value.javaClass.name}&quot;)
+            "MAX is not implemented for data type: ${value.javaClass.name}")
         }
 
         if (isMax) {
@@ -1134,7 +1134,7 @@ interface Accumulator {
   }
 
   override fun toString(): String {
-    return &quot;ScanExec: schema=${schema()}, projection=$projection&quot;
+    return "ScanExec: schema=${schema()}, projection=$projection"
   }
 }
 </code></pre>
@@ -1161,7 +1161,7 @@ interface Accumulator {
   }
 
   override fun toString(): String {
-    return &quot;ProjectionExec: $expr&quot;
+    return "ProjectionExec: $expr"
   }
 }
 </code></pre>
@@ -1194,7 +1194,7 @@ interface Accumulator {
     }
 
   private fun filter(v: ColumnVector, selection: BitVector) : FieldVector {
-    val filteredVector = VarCharVector(&quot;v&quot;,
+    val filteredVector = VarCharVector("v",
                                        RootAllocator(Long.MAX_VALUE))
     filteredVector.allocateNew()
 
@@ -1229,7 +1229,7 @@ interface Accumulator {
   }
 
   override fun toString(): String {
-    return &quot;HashAggregateExec: groupExpr=$groupExpr, aggrExpr=$aggregateExpr&quot;
+    return "HashAggregateExec: groupExpr=$groupExpr, aggrExpr=$aggregateExpr"
   }
 
   override fun execute(): Sequence&lt;RecordBatch&gt; {
@@ -1300,7 +1300,7 @@ interface Accumulator {
 <h2 id="joins"><a class="header" href="#joins">Joins</a></h2>
 <p>As the name suggests, the Join operator joins rows from two relations. There are a number of different types of joins with different semantics:</p>
 <ul>
-<li><code>[INNER] JOIN</code>: This is the most commonly used join type and creates a new relation containing rows from both the left and right inputs. When the join expression consists only of equality comparisons between columns from the left and right inputs then the join is known as an &quot;equi-join&quot;. An example of an equi-join would be <code>SELECT * FROM customer JOIN orders ON customer.id = order.customer_id</code>.</li>
+<li><code>[INNER] JOIN</code>: This is the most commonly used join type and creates a new relation containing rows from both the left and right inputs. When the join expression consists only of equality comparisons between columns from the left and right inputs then the join is known as an "equi-join". An example of an equi-join would be <code>SELECT * FROM customer JOIN orders ON customer.id = order.customer_id</code>.</li>
 <li><code>LEFT [OUTER] JOIN</code>: A left outer join produces rows that contain all values from the left input, and optionally rows from the right input. Where this is no match on the right-hand side then null values are produced for the right columns.</li>
 <li><code>RIGHT [OUTER] JOIN</code>: This is the opposite of the left join. All rows from the right are returned along with rows from the left where available.</li>
 <li><code>SEMI JOIN</code>: A semi join is similar to a left join but it only returns rows from the left input where there is match to the right input. No data is returned from the right input. Not all SQL implementations support semi joins explicitly and they are often written as subqueries instead. An example of a semi join would be <code>SELECT id FROM foo WHERE EXISTS (SELECT * FROM bar WHERE foo.id = bar.id)</code>.</li>
@@ -1353,7 +1353,7 @@ interface Accumulator {
 <pre><code class="language-kotlin">is Column -&gt; {
   val i = input.schema().fields.indexOfFirst { it.name == expr.name }
   if (i == -1) {
-    throw SQLException(&quot;No column named '${expr.name}'&quot;)
+    throw SQLException("No column named '${expr.name}'")
   }
   ColumnExpression(i)
 </code></pre>
@@ -1388,7 +1388,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
     is Divide -&gt; DivideExpression(l, r)
 
     else -&gt; throw IllegalStateException(
-        &quot;Unsupported binary expression: $expr&quot;)
+        "Unsupported binary expression: $expr")
     }
 }
 </code></pre>
@@ -1433,7 +1433,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
       is Min -&gt; MinExpression(createPhysicalExpr(it.expr, plan.input))
       is Sum -&gt; SumExpression(createPhysicalExpr(it.expr, plan.input))
       else -&gt; throw java.lang.IllegalStateException(
-          &quot;Unsupported aggregate function: $it&quot;)
+          "Unsupported aggregate function: $it")
     }
   }
   HashAggregateExec(input, groupExpr, aggregateExpr, plan.schema())
@@ -1482,7 +1482,7 @@ fun extractColumns(expr: LogicalExpr,
     is LiteralLong -&gt; {}
     is LiteralDouble -&gt; {}
     else -&gt; throw IllegalStateException(
-        &quot;extractColumns does not support expression: $expr&quot;)
+        "extractColumns does not support expression: $expr")
   }
 }
 </code></pre>
@@ -1583,50 +1583,50 @@ fun extractColumns(expr: LogicalExpr,
 <p><em>The source code discussed in this chapter can be found in the <code>spark</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
 <p>First, we need to create a Spark context. Note that we are using a single thread for execution so that we can make a relatively fair comparison to the performance of the single threaded implementation in KQuery.</p>
 <pre><code class="language-scala">val spark = SparkSession.builder()
-  .master(&quot;local[1]&quot;)
+  .master("local[1]")
   .getOrCreate()
 </code></pre>
 <p>Next, we need to register the CSV file as a DataFrame against the context.</p>
 <pre><code class="language-scala">val schema = StructType(Seq(
-  StructField(&quot;VendorID&quot;, DataTypes.IntegerType),
-  StructField(&quot;tpep_pickup_datetime&quot;, DataTypes.TimestampType),
-  StructField(&quot;tpep_dropoff_datetime&quot;, DataTypes.TimestampType),
-  StructField(&quot;passenger_count&quot;, DataTypes.IntegerType),
-  StructField(&quot;trip_distance&quot;, DataTypes.DoubleType),
-  StructField(&quot;RatecodeID&quot;, DataTypes.IntegerType),
-  StructField(&quot;store_and_fwd_flag&quot;, DataTypes.StringType),
-  StructField(&quot;PULocationID&quot;, DataTypes.IntegerType),
-  StructField(&quot;DOLocationID&quot;, DataTypes.IntegerType),
-  StructField(&quot;payment_type&quot;, DataTypes.IntegerType),
-  StructField(&quot;fare_amount&quot;, DataTypes.DoubleType),
-  StructField(&quot;extra&quot;, DataTypes.DoubleType),
-  StructField(&quot;mta_tax&quot;, DataTypes.DoubleType),
-  StructField(&quot;tip_amount&quot;, DataTypes.DoubleType),
-  StructField(&quot;tolls_amount&quot;, DataTypes.DoubleType),
-  StructField(&quot;improvement_surcharge&quot;, DataTypes.DoubleType),
-  StructField(&quot;total_amount&quot;, DataTypes.DoubleType)
+  StructField("VendorID", DataTypes.IntegerType),
+  StructField("tpep_pickup_datetime", DataTypes.TimestampType),
+  StructField("tpep_dropoff_datetime", DataTypes.TimestampType),
+  StructField("passenger_count", DataTypes.IntegerType),
+  StructField("trip_distance", DataTypes.DoubleType),
+  StructField("RatecodeID", DataTypes.IntegerType),
+  StructField("store_and_fwd_flag", DataTypes.StringType),
+  StructField("PULocationID", DataTypes.IntegerType),
+  StructField("DOLocationID", DataTypes.IntegerType),
+  StructField("payment_type", DataTypes.IntegerType),
+  StructField("fare_amount", DataTypes.DoubleType),
+  StructField("extra", DataTypes.DoubleType),
+  StructField("mta_tax", DataTypes.DoubleType),
+  StructField("tip_amount", DataTypes.DoubleType),
+  StructField("tolls_amount", DataTypes.DoubleType),
+  StructField("improvement_surcharge", DataTypes.DoubleType),
+  StructField("total_amount", DataTypes.DoubleType)
 ))
 
-val tripdata = spark.read.format(&quot;csv&quot;)
-  .option(&quot;header&quot;, &quot;true&quot;)
+val tripdata = spark.read.format("csv")
+  .option("header", "true")
   .schema(schema)
-  .load(&quot;/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv&quot;)
+  .load("/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv")
 
-tripdata.createOrReplaceTempView(&quot;tripdata&quot;)
+tripdata.createOrReplaceTempView("tripdata")
 </code></pre>
 <p>Finally, we can go ahead and execute SQL against the DataFrame.</p>
 <pre><code class="language-scala">val start = System.currentTimeMillis()
 
 val df = spark.sql(
-  &quot;&quot;&quot;SELECT passenger_count, MAX(fare_amount)
+  """SELECT passenger_count, MAX(fare_amount)
     |FROM tripdata
-    |GROUP BY passenger_count&quot;&quot;&quot;.stripMargin)
+    |GROUP BY passenger_count""".stripMargin)
 
 df.foreach(row =&gt; println(row))
 
 val duration = System.currentTimeMillis() - start
 
-println(s&quot;Query took $duration ms&quot;)
+println(s"Query took $duration ms")
 </code></pre>
 <p>Executing this code on my desktop produces the following output.</p>
 <pre><code>[1,623259.86]
@@ -1648,17 +1648,17 @@ Query took 14418 ms
 
 val ctx = ExecutionContext()
 
-val df = ctx.csv(&quot;/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv&quot;, 1*1024)
+val df = ctx.csv("/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv", 1*1024)
             .aggregate(
-               listOf(col(&quot;passenger_count&quot;)),
-               listOf(max(cast(col(&quot;fare_amount&quot;), ArrowTypes.FloatType))))
+               listOf(col("passenger_count")),
+               listOf(max(cast(col("fare_amount"), ArrowTypes.FloatType))))
 
 val optimizedPlan = Optimizer().optimize(df.logicalPlan())
 val results = ctx.execute(optimizedPlan)
 
 results.forEach { println(it.toCSV()) }
 
-println(&quot;Query took $time ms&quot;)
+println("Query took $time ms")
 </code></pre>
 <p>This produces the following output on my desktop.</p>
 <pre><code>Schema&lt;passenger_count: Utf8, MAX: FloatingPoint(DOUBLE)&gt;
@@ -1675,23 +1675,23 @@ println(&quot;Query took $time ms&quot;)
 
 Query took 6740 ms
 </code></pre>
-<p>We can see that the results match those produced by Apache Spark. We also see that the performance is respectable for this size of input. It is very likely that Apache Spark will outperform KQuery with larger data sets since it is optimized for &quot;Big Data&quot;.</p>
+<p>We can see that the results match those produced by Apache Spark. We also see that the performance is respectable for this size of input. It is very likely that Apache Spark will outperform KQuery with larger data sets since it is optimized for "Big Data".</p>
 <h2 id="removing-the-query-optimizer"><a class="header" href="#removing-the-query-optimizer">Removing The Query Optimizer</a></h2>
 <p>Let's remove the optimizations and see how much they helped with performance.</p>
 <pre><code class="language-kotlin">val time = measureTimeMillis {
 
 val ctx = ExecutionContext()
 
-val df = ctx.csv(&quot;/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv&quot;, 1*1024)
+val df = ctx.csv("/mnt/nyctaxi/csv/yellow_tripdata_2019-01.csv", 1*1024)
             .aggregate(
-               listOf(col(&quot;passenger_count&quot;)),
-               listOf(max(cast(col(&quot;fare_amount&quot;), ArrowTypes.FloatType))))
+               listOf(col("passenger_count")),
+               listOf(max(cast(col("fare_amount"), ArrowTypes.FloatType))))
 
 val results = ctx.execute(df.logicalPlan())
 
 results.forEach { println(it.toCSV()) }
 
-println(&quot;Query took $time ms&quot;)
+println("Query took $time ms")
 </code></pre>
 <p>This produces the following output on my desktop.</p>
 <pre><code>1,623259.86
@@ -1730,19 +1730,19 @@ data class OperatorToken(val s: String) : Token
   }
 }
 </code></pre>
-<p>Given the input <code>&quot;SELECT a + b FROM c&quot;</code> we expect the output to be as follows:</p>
+<p>Given the input <code>"SELECT a + b FROM c"</code> we expect the output to be as follows:</p>
 <pre><code class="language-kotlin">listOf(
-  KeywordToken(&quot;SELECT&quot;),
-  IdentifierToken(&quot;a&quot;),
-  OperatorToken(&quot;+&quot;),
-  IdentifierToken(&quot;b&quot;),
-  KeywordToken(&quot;FROM&quot;),
-  IdentifierToken(&quot;c&quot;)
+  KeywordToken("SELECT"),
+  IdentifierToken("a"),
+  OperatorToken("+"),
+  IdentifierToken("b"),
+  KeywordToken("FROM"),
+  IdentifierToken("c")
 )
 </code></pre>
 <h2 id="pratt-parser"><a class="header" href="#pratt-parser">Pratt Parser</a></h2>
 <p>We are going to hand-code a SQL parser based on the <a href="https://tdop.github.io/">Top Down Operator Precedence</a> paper published by Vaughan R. Pratt in 1973. Although there are other approaches to building SQL parsers such as using Parser Generators and Parser Combinators, I have found Pratt's approach to work well and it results in code that is efficient, easy to comprehend, and easy to debug.</p>
-<p>Here is a bare-bones implementation of a Pratt parser. In my opinion, it is beautiful in its simplicity. Expression parsing is performed by a simple loop that parses a &quot;prefix&quot; expression followed by an optional &quot;infix&quot; expression and keeps doing this until the precedence changes in such a way that the parser recognizes that it has finished parsing the expression. Of course, the implementation of <code>parsePrefix</code> and <code>parseInfix</code> can recursively call back into the <code>parse</code> method and this is where it becomes very powerful.</p>
+<p>Here is a bare-bones implementation of a Pratt parser. In my opinion, it is beautiful in its simplicity. Expression parsing is performed by a simple loop that parses a "prefix" expression followed by an optional "infix" expression and keeps doing this until the precedence changes in such a way that the parser recognizes that it has finished parsing the expression. Of course, the implementation of <code>parsePrefix</code> and <code>parseInfix</code> can recursively call back into the <code>parse</code> method and this is where it becomes very powerful.</p>
 <pre><code class="language-kotlin">interface PrattParser {
 
   /** Parse an expression */
@@ -1777,25 +1777,25 @@ data class SqlIdentifier(val id: String) : SqlExpr {
 
 /** Binary expression */
 data class SqlBinaryExpr(val l: SqlExpr, val op: String, val r: SqlExpr) : SqlExpr {
-  override fun toString(): String = &quot;$l $op $r&quot;
+  override fun toString(): String = "$l $op $r"
 }
 
 /** SQL literal string */
 data class SqlString(val value: String) : SqlExpr {
-  override fun toString() = &quot;'$value'&quot;
+  override fun toString() = "'$value'"
 }
 </code></pre>
 <p>With these classes in place it is possible to represent the expression <code>foo = 'bar'</code> with the following code.</p>
-<pre><code class="language-kotlin">val sqlExpr = SqlBinaryExpr(SqlIdentifier(&quot;foo&quot;), &quot;=&quot;, SqlString(&quot;bar&quot;))
+<pre><code class="language-kotlin">val sqlExpr = SqlBinaryExpr(SqlIdentifier("foo"), "=", SqlString("bar"))
 </code></pre>
 <h2 id="parsing-sql-expressions"><a class="header" href="#parsing-sql-expressions">Parsing SQL Expressions</a></h2>
 <p>Let's walk through this approach for parsing a simple math expression such as <code>1 + 2 * 3</code>. This expression consists of the following tokens.</p>
 <pre><code class="language-kotlin">listOf(
-  LiteralLongToken(&quot;1&quot;),
-  OperatorToken(&quot;+&quot;),
-  LiteralLongToken(&quot;2&quot;),
-  OperatorToken(&quot;*&quot;),
-  LiteralLongToken(&quot;3&quot;)
+  LiteralLongToken("1"),
+  OperatorToken("+"),
+  LiteralLongToken("2"),
+  OperatorToken("*"),
+  LiteralLongToken("3")
 )
 </code></pre>
 <p>We need to create an implementation of the <code>PrattParser</code> trait and pass the tokens into the constructor. The tokens are wrapped in a <code>TokenStream</code> class that provides some convenience methods such as <code>next</code> for consuming the next token, and <code>peek</code> for when we want to look ahead without consuming a token.</p>
@@ -1808,8 +1808,8 @@ data class SqlString(val value: String) : SqlExpr {
   return when (token) {
     is OperatorToken -&gt; {
       when (token.s) {
-        &quot;+&quot;, &quot;-&quot; -&gt; 50
-        &quot;*&quot;, &quot;/&quot; -&gt; 60
+        "+", "-" -&gt; 50
+        "*", "/" -&gt; 60
         else -&gt; 0
       }
     }
@@ -1822,7 +1822,7 @@ data class SqlString(val value: String) : SqlExpr {
   val token = tokens.next() ?: return null
   return when (token) {
     is LiteralLongToken -&gt; SqlLong(token.s.toLong())
-    else -&gt; throw IllegalStateException(&quot;Unexpected token $token&quot;)
+    else -&gt; throw IllegalStateException("Unexpected token $token")
   }
 }
 </code></pre>
@@ -1833,9 +1833,9 @@ data class SqlString(val value: String) : SqlExpr {
     is OperatorToken -&gt; {
       tokens.next()
       SqlBinaryExpr(left, token.s, parse(precedence) ?:
-                    throw SQLException(&quot;Error parsing infix&quot;))
+                    throw SQLException("Error parsing infix"))
     }
-    else -&gt; throw IllegalStateException(&quot;Unexpected infix token $token&quot;)
+    else -&gt; throw IllegalStateException("Unexpected infix token $token")
   }
 }
 </code></pre>
@@ -1848,8 +1848,8 @@ Precedence:  [0] [50]  [0] [60]  [0]
 <p>The final result correctly represents the expression as <code>1 + (2 * 3)</code>.</p>
 <pre><code class="language-kotlin">SqlBinaryExpr(
     SqlLong(1),
-    &quot;+&quot;,
-    SqlBinaryExpr(SqlLong(2), &quot;*&quot;, SqlLong(3))
+    "+",
+    SqlBinaryExpr(SqlLong(2), "*", SqlLong(3))
 )
 </code></pre>
 <p><em>Example: Parsing <code>1 _ 2 + 3</code></em></p>
@@ -1858,8 +1858,8 @@ Precedence:  [0] [60]  [0] [50]  [0]
 </code></pre>
 <p>The final result correctly represents the expression as <code>(1 * 2) + 3</code>.</p>
 <pre><code class="language-kotlin">SqlBinaryExpr(
-    SqlBinaryExpr(SqlLong(1), &quot;*&quot;, SqlLong(2)),
-    &quot;+&quot;,
+    SqlBinaryExpr(SqlLong(1), "*", SqlLong(2)),
+    "+",
     SqlLong(3)
 )
 </code></pre>
@@ -1890,7 +1890,7 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
     Projection: #id, #first_name, #last_name, #salary/12 AS monthly_salary, #state
       Scan: table=employee
 </code></pre>
-<p>It is worth noting that we will build a &quot;Predicate Push Down&quot; query optimizer rule in a later chapter that will be able to optimize this plan and push the <code>state = 'CO'</code> part of the predicate further down in the plan so that it is before the projection.</p>
+<p>It is worth noting that we will build a "Predicate Push Down" query optimizer rule in a later chapter that will be able to optimize this plan and push the <code>state = 'CO'</code> part of the predicate further down in the plan so that it is before the projection.</p>
 <h2 id="translating-sql-expressions"><a class="header" href="#translating-sql-expressions">Translating SQL Expressions</a></h2>
 <p>Translating SQL expressions to logical expressions is fairly simple, as demonstrated in this example code.</p>
 <pre><code class="language-kotlin">private fun createLogicalExpr(expr: SqlExpr, input: DataFrame) : LogicalExpr {
@@ -1905,22 +1905,22 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
       val r = createLogicalExpr(expr.r, input)
       when(expr.op) {
         // comparison operators
-        &quot;=&quot; -&gt; Eq(l, r)
-        &quot;!=&quot; -&gt; Neq(l, r)
-        &quot;&gt;&quot; -&gt; Gt(l, r)
-        &quot;&gt;=&quot; -&gt; GtEq(l, r)
-        &quot;&lt;&quot; -&gt; Lt(l, r)
-        &quot;&lt;=&quot; -&gt; LtEq(l, r)
+        "=" -&gt; Eq(l, r)
+        "!=" -&gt; Neq(l, r)
+        "&gt;" -&gt; Gt(l, r)
+        "&gt;=" -&gt; GtEq(l, r)
+        "&lt;" -&gt; Lt(l, r)
+        "&lt;=" -&gt; LtEq(l, r)
         // boolean operators
-        &quot;AND&quot; -&gt; And(l, r)
-        &quot;OR&quot; -&gt; Or(l, r)
+        "AND" -&gt; And(l, r)
+        "OR" -&gt; Or(l, r)
         // math operators
-        &quot;+&quot; -&gt; Add(l, r)
-        &quot;-&quot; -&gt; Subtract(l, r)
-        &quot;*&quot; -&gt; Multiply(l, r)
-        &quot;/&quot; -&gt; Divide(l, r)
-        &quot;%&quot; -&gt; Modulus(l, r)
-        else -&gt; throw SQLException(&quot;Invalid operator ${expr.op}&quot;)
+        "+" -&gt; Add(l, r)
+        "-" -&gt; Subtract(l, r)
+        "*" -&gt; Multiply(l, r)
+        "/" -&gt; Divide(l, r)
+        "%" -&gt; Modulus(l, r)
+        else -&gt; throw SQLException("Invalid operator ${expr.op}")
       }
     }
 
@@ -1934,7 +1934,7 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
 
   // get a reference to the data source
   var df = tables[select.tableName] ?:
-      throw SQLException(&quot;No table named '${select.tableName}'&quot;)
+      throw SQLException("No table named '${select.tableName}'")
 
   val projectionExpr = select.projection.map { createLogicalExpr(it, df) }
 
@@ -1966,7 +1966,7 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
 
   // get a reference to the data source
   var df = tables[select.tableName] ?:
-    throw SQLException(&quot;No table named '${select.tableName}'&quot;)
+    throw SQLException("No table named '${select.tableName}'")
 
   // create the logical expressions for the projection
   val projectionExpr = select.projection.map { createLogicalExpr(it, df) }
@@ -2022,10 +2022,10 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
 <p>The source code for this example can be found at <code>jvm/examples/src/main/kotlin/ParallelQuery.kt</code> in the KQuery GitHub repository.</p>
 <p>Let us start with the single-threaded code for running one query against one partition.</p>
 <pre><code class="language-kotlin">fun executeQuery(path: String, month: Int, sql: String): List&lt;RecordBatch&gt; {
-  val monthStr = String.format(&quot;%02d&quot;, month);
-  val filename = &quot;$path/yellow_tripdata_2019-$monthStr.csv&quot;
+  val monthStr = String.format("%02d", month);
+  val filename = "$path/yellow_tripdata_2019-$monthStr.csv"
   val ctx = ExecutionContext()
-  ctx.registerCsv(&quot;tripdata&quot;, filename)
+  ctx.registerCsv("tripdata", filename)
   val df = ctx.sql(sql)
   return ctx.execute(df).toList()
 }
@@ -2035,15 +2035,15 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
 val deferred = (1..12).map {month -&gt;
   GlobalScope.async {
 
-    val sql = &quot;SELECT passenger_count, &quot; +
-        &quot;MAX(CAST(fare_amount AS double)) AS max_fare &quot; +
-        &quot;FROM tripdata &quot; +
-        &quot;GROUP BY passenger_count&quot;
+    val sql = "SELECT passenger_count, " +
+        "MAX(CAST(fare_amount AS double)) AS max_fare " +
+        "FROM tripdata " +
+        "GROUP BY passenger_count"
 
     val start = System.currentTimeMillis()
     val result = executeQuery(path, month, sql)
     val duration = System.currentTimeMillis() - start
-    println(&quot;Query against month $month took $duration ms&quot;)
+    println("Query against month $month took $duration ms")
     result
   }
 }
@@ -2051,7 +2051,7 @@ val results: List&lt;RecordBatch&gt; = runBlocking {
   deferred.flatMap { it.await() }
 }
 val duration = System.currentTimeMillis() - start
-println(&quot;Collected ${results.size} batches in $duration ms&quot;)
+println("Collected ${results.size} batches in $duration ms")
 </code></pre>
 <p>Here is the output from this example, running on a desktop computer with <em>24 cores</em>.</p>
 <pre><code>Query against month 8 took 17074 ms
@@ -2071,15 +2071,15 @@ Collected 12 batches in 25505 ms
 <p>As you can see, the total duration was around the same time as the slowest query.</p>
 <p>Although we have successfully executed the aggregate query against the partitions, our result is a list of batches of data with duplicate values. For example, there will most likely be a result for <code>passenger_count=1</code> from each of the partitions.</p>
 <h2 id="combining-results"><a class="header" href="#combining-results">Combining Results</a></h2>
-<p>For simple queries consisting of projection and selection operators, the results of the parallel queries can be combined (similar to a SQL <code>UNION ALL</code> operation), and no further processing is required. More complex queries involving aggregates, sorts, or joins will require a secondary query to be run on the results of the parallel queries to combine the results. The terms &quot;map&quot; and &quot;reduce&quot; are often used to explain this two-step process. The &quot;map&quot; step refers to running one query in parallel across the partitions, and the &quot;reduce&quot; step refers to combining the results into a single result.</p>
+<p>For simple queries consisting of projection and selection operators, the results of the parallel queries can be combined (similar to a SQL <code>UNION ALL</code> operation), and no further processing is required. More complex queries involving aggregates, sorts, or joins will require a secondary query to be run on the results of the parallel queries to combine the results. The terms "map" and "reduce" are often used to explain this two-step process. The "map" step refers to running one query in parallel across the partitions, and the "reduce" step refers to combining the results into a single result.</p>
 <p>For this particular example, it is now necessary to run a secondary aggregation query almost identical to the aggregate query executed against the partitions. One difference is that the second query may need to apply different aggregate functions. For the aggregate functions <code>min</code>, <code>max</code>, and <code>sum</code>, the same operation is used in the map and reduce steps, to get the min of the min or the sum of the sums. For the count expression, we do not want the count of the counts. We want to see the sum of the counts instead.</p>
-<pre><code class="language-kotlin">val sql = &quot;SELECT passenger_count, &quot; +
-        &quot;MAX(max_fare) &quot; +
-        &quot;FROM tripdata &quot; +
-        &quot;GROUP BY passenger_count&quot;
+<pre><code class="language-kotlin">val sql = "SELECT passenger_count, " +
+        "MAX(max_fare) " +
+        "FROM tripdata " +
+        "GROUP BY passenger_count"
 
 val ctx = ExecutionContext()
-ctx.registerDataSource(&quot;tripdata&quot;, InMemoryDataSource(results.first().schema, results))
+ctx.registerDataSource("tripdata", InMemoryDataSource(results.first().schema, results))
 val df = ctx.sql(sql)
 ctx.execute(df).forEach { println(it) }
 </code></pre>
@@ -2097,7 +2097,7 @@ ctx.execute(df).forEach { println(it) }
 </code></pre>
 <h2 id="smarter-partitioning"><a class="header" href="#smarter-partitioning">Smarter Partitioning</a></h2>
 <p>Although the strategy of using one thread per file worked well in this example, it does not work as a general-purpose approach to partitioning. If a data source has thousands of small partitions, starting one thread per partition would be inefficient. A better approach would be for the query planner to decide how to share the available data between a specified number of worker threads (or executors).</p>
-<p>Some file formats already have a natural partitioning scheme within them. For example, Apache Parquet files consist of multiple &quot;row groups&quot; containing batches of columnar data. A query planner could inspect the available Parquet files, build a list of row groups and then schedule reading these row groups across a fixed number of threads or executors.</p>
+<p>Some file formats already have a natural partitioning scheme within them. For example, Apache Parquet files consist of multiple "row groups" containing batches of columnar data. A query planner could inspect the available Parquet files, build a list of row groups and then schedule reading these row groups across a fixed number of threads or executors.</p>
 <p>It is even possible to apply this technique to unstructured files such as CSV files, but this is not trivial. It is easy to inspect the file size and break the file into equal-sized chunks, but a record could likely span two chunks, so it is necessary to read backward or forwards from a boundary to find the start or end of the record. It is insufficient to look for a newline character because these often appear within records and are also used to delimit records. It is common practice to convert CSV files into a structured format such as Parquet early on in a processing pipeline to improve the efficiency of subsequent processing.</p>
 <h2 id="partition-keys"><a class="header" href="#partition-keys">Partition Keys</a></h2>
 <p>One solution to this problem is to place files in directories and use directory names consisting of key-value pairs to specify the contents.</p>
@@ -2107,7 +2107,7 @@ ctx.execute(df).forEach { println(it) }
 ...
 /mnt/nyxtaxi/csv/year=2019/month=12/tripdata.csv
 </code></pre>
-<p>Given this structure, the query planner could now implement a form of &quot;predicate push down&quot; to limit the number of partitions included in the physical query plan. This approach is often referred to as &quot;partition pruning&quot;.</p>
+<p>Given this structure, the query planner could now implement a form of "predicate push down" to limit the number of partitions included in the physical query plan. This approach is often referred to as "partition pruning".</p>
 <h2 id="parallel-joins"><a class="header" href="#parallel-joins">Parallel Joins</a></h2>
 <p>When performing an inner join with a single thread, a simple approach is to load one side of the join into memory and then scan the other side, performing lookups against the data stored in memory. This classic Hash Join algorithm is efficient if one side of the join can fit into memory.</p>
 <p>The parallel version of this is known as a Partitioned Hash Join or Parallel Hash Join. It involves partitioning both inputs based on the join keys and performing a classic Hash Join on each pair of input partitions.</p>
@@ -2115,7 +2115,7 @@ ctx.execute(df).forEach { println(it) }
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="distributed-query-execution"><a class="header" href="#distributed-query-execution">Distributed Query Execution</a></h1>
 <p>The previous section on Parallel Query Execution covered some fundamental concepts such as partitioning, which we will build on in this section.</p>
-<p>To somewhat over-simplify the concept of distributed query execution, the goal is to be able to create a physical query plan which defines how work is distributed to a number of &quot;executors&quot; in a cluster. Distributed query plans will typically contain new operators that describe how data is exchanged between executors at various points during query execution.</p>
+<p>To somewhat over-simplify the concept of distributed query execution, the goal is to be able to create a physical query plan which defines how work is distributed to a number of "executors" in a cluster. Distributed query plans will typically contain new operators that describe how data is exchanged between executors at various points during query execution.</p>
 <p>In the following sections we will explore how different types of plans are executed in a distributed environment and then discuss building a distributed query scheduler.</p>
 <h2 id="embarrassingly-parallel-operators"><a class="header" href="#embarrassingly-parallel-operators">Embarrassingly Parallel Operators</a></h2>
 <p>Certain operators can run in parallel on partitions of data without any significant overhead when running in a distributed environment. The best examples of these are Projection and Filter. These operators can be applied in parallel to each input partition of the data being operated on and produce a corresponding output partition for each one. These operators do not change the partitioning scheme of the data.</p>
@@ -2135,7 +2135,7 @@ GROUP BY passenger_count
 <p>Here is a diagram showing how this query could be executed in a distributed environment:</p>
 <p><img src="images/distributed_agg.png" alt="distributed agg" /></p>
 <h2 id="distributed-joins"><a class="header" href="#distributed-joins">Distributed Joins</a></h2>
-<p>Joins are often the most expensive operation to perform in a distributed environment. The reason for this is that we need to make sure that we organize the data in such a way that both input relations are partitioned on the join keys. For example, if we joining a <code>customer</code> table to an <code>order</code> table where the join condition is <code>customer.id = order.customer_id</code>, then all the rows in both tables for a specific customer must be processed by the same executor. To achieve this, we have to first repartition both tables on the join keys and write the partitions to disk. Once this has completed then we can perform the join in parallel with one join for each partition. The resulting data will remain partitioned by the join keys. This particular join algorithm is called a partitioned hash join. The process of repartitioning the data is known as performing a &quot;shuffle&quot;.</p>
+<p>Joins are often the most expensive operation to perform in a distributed environment. The reason for this is that we need to make sure that we organize the data in such a way that both input relations are partitioned on the join keys. For example, if we joining a <code>customer</code> table to an <code>order</code> table where the join condition is <code>customer.id = order.customer_id</code>, then all the rows in both tables for a specific customer must be processed by the same executor. To achieve this, we have to first repartition both tables on the join keys and write the partitions to disk. Once this has completed then we can perform the join in parallel with one join for each partition. The resulting data will remain partitioned by the join keys. This particular join algorithm is called a partitioned hash join. The process of repartitioning the data is known as performing a "shuffle".</p>
 <p><img src="images/distributed_join.png" alt="distributed join" /></p>
 <h2 id="distributed-query-scheduling"><a class="header" href="#distributed-query-scheduling">Distributed Query Scheduling</a></h2>
 <p>Distributed query plans are fundamentally different to in-process query plans because we can't just build a tree of operators and start executing them. The query now requires co-ordination across executors which means that we now need to build a scheduler.</p>
@@ -2196,7 +2196,7 @@ Query Stage #2: repartition=[order.customer_id]
 <h2 id="serializing-a-query-plan"><a class="header" href="#serializing-a-query-plan">Serializing a Query Plan</a></h2>
 <p>The query scheduler needs to send fragments of the overall query plan to executors for execution.</p>
 <p>There are a number of options for serializing a query plan so that it can be passed between processes. Many query engines choose the strategy of using the programming languages native serialization support, which is a suitable choice if there is no requirement to be able to exchange query plans between different programming languages and this is usually the simplest mechanism to implement.</p>
-<p>However, there are advantages in using a serialization format that is programming language-agnostic. Ballista uses Google's <a href="https://developers.google.com/protocol-buffers">Protocol Buffers</a> format to define query plans. The project is typically abbreviated as &quot;protobuf&quot;.</p>
+<p>However, there are advantages in using a serialization format that is programming language-agnostic. Ballista uses Google's <a href="https://developers.google.com/protocol-buffers">Protocol Buffers</a> format to define query plans. The project is typically abbreviated as "protobuf".</p>
 <p>Here is a subset of the Ballista protocol buffer definition of a query plan.</p>
 <p>Full source code can be found at <code>proto/ballista.proto</code> in the Ballista github repository.</p>
 <pre><code class="language-protobuf">message LogicalPlanNode {
@@ -2313,13 +2313,13 @@ message LimitNode {
     return RecordBatch(schema, root.fieldVectors.map { ArrowFieldVector(it) })
 }
 </code></pre>
-<p>Here is an example unit test for the &quot;greater than or equals&quot; (<code>&gt;=</code>) expression being evaluated against a record batch containing two columns containing double-precision floating point values.</p>
+<p>Here is an example unit test for the "greater than or equals" (<code>&gt;=</code>) expression being evaluated against a record batch containing two columns containing double-precision floating point values.</p>
 <pre><code class="language-kotlin">@Test
 fun `gteq doubles`() {
 
     val schema = Schema(listOf(
-            Field(&quot;a&quot;, ArrowTypes.DoubleType),
-            Field(&quot;b&quot;, ArrowTypes.DoubleType)
+            Field("a", ArrowTypes.DoubleType),
+            Field("b", ArrowTypes.DoubleType)
     ))
 
     val a: List&lt;Double&gt; = listOf(0.0, 1.0,
@@ -2469,7 +2469,7 @@ fun `gteq doubles`() {
 </ul>
 <h2 id="comparing-benchmarks"><a class="header" href="#comparing-benchmarks">Comparing Benchmarks</a></h2>
 <p>It is important to compare benchmarks between releases of the software so that changes in performance characteristics are apparent and can be investigated further. Benchmarks produce a lot of data that is often hard to compare manually, so it can be beneficial to build tooling to help with this process.</p>
-<p>Rather than comparing two sets of performance data directly, tooling can perform a &quot;diff&quot; of the data and show percentage differences between two or more runs of the same benchmark. It is also useful to be able to produce charts showing multiple benchmark runs.</p>
+<p>Rather than comparing two sets of performance data directly, tooling can perform a "diff" of the data and show percentage differences between two or more runs of the same benchmark. It is also useful to be able to produce charts showing multiple benchmark runs.</p>
 <h2 id="publishing-benchmark-results"><a class="header" href="#publishing-benchmark-results">Publishing Benchmark Results</a></h2>
 <p>Here is an example of some real benchmark results, comparing query execution time for the Rust and JVM executors in Ballista, compared to Apache Spark. Although it is clear from this data that the Rust executor is performing well, the benefit can be expressed much better by producing a chart.</p>
 <div class="table-wrapper"><table><thead><tr><th>CPU Cores</th><th>Ballista Rust</th><th>Ballista JVM</th><th>Apache Spark</th></tr></thead><tbody>
@@ -2484,9 +2484,9 @@ fun `gteq doubles`() {
 <p><img src="images/benchmark-result-0.2.5.svg" alt="benchmark result" /></p>
 <h2 id="transaction-processing-council-tpc-benchmarks"><a class="header" href="#transaction-processing-council-tpc-benchmarks">Transaction Processing Council (TPC) Benchmarks</a></h2>
 <p>The Transaction Processing Council is a consortium of database vendors that collaborate on creating and maintaining various database benchmark suites to allow for fair comparisons between vendor's systems. Current TPC member companies include Microsoft, Oracle, IBM, Hewlett Packard Enterprise, AMD, Intel, and NVIDIA.</p>
-<p>The first benchmark, TPC-A, was published in 1989 and other benchmarks have been created since then. TPC-C is a well known OLTP benchmark used when comparing traditional RDBMS databases, and TPC-H (discontinued) and TPC-DS are often used for measuring performance of &quot;Big Data&quot; query engines.</p>
-<p>TPC benchmarks are seen as the &quot;gold standard&quot; in the industry and are complex and time consuming to implement fully. Also, results for these benchmarks can only be published by TPC members and only after the benchmarks have been audited by the TPC. Taking TPC-DS as an example, the only companies to have ever published official results at the time of writing are Alibaba.com, H2C, SuperMicro, and Databricks.</p>
-<p>However, the TPC has a Fair Use policy that allows non-members to create unofficial benchmarks based on TPC benchmarks, as long as certain conditions are followed, such as prefixing any use of the term TPC with &quot;derived from TPC&quot;. For example, &quot;Performance of Query derived from TPC-DS Query 14&quot;. TPC Copyright Notice and License Agreements must also be maintained. There are also limitations on the types of metrics that can be published.</p>
+<p>The first benchmark, TPC-A, was published in 1989 and other benchmarks have been created since then. TPC-C is a well known OLTP benchmark used when comparing traditional RDBMS databases, and TPC-H (discontinued) and TPC-DS are often used for measuring performance of "Big Data" query engines.</p>
+<p>TPC benchmarks are seen as the "gold standard" in the industry and are complex and time consuming to implement fully. Also, results for these benchmarks can only be published by TPC members and only after the benchmarks have been audited by the TPC. Taking TPC-DS as an example, the only companies to have ever published official results at the time of writing are Alibaba.com, H2C, SuperMicro, and Databricks.</p>
+<p>However, the TPC has a Fair Use policy that allows non-members to create unofficial benchmarks based on TPC benchmarks, as long as certain conditions are followed, such as prefixing any use of the term TPC with "derived from TPC". For example, "Performance of Query derived from TPC-DS Query 14". TPC Copyright Notice and License Agreements must also be maintained. There are also limitations on the types of metrics that can be published.</p>
 <p>Many open source projects simply measure the time to execute individual queries from the TPC benchmark suites and use this as a way to track performance over time and for comparison with other query engines.</p>
 <p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
