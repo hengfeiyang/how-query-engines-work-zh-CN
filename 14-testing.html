@@ -179,7 +179,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
+                        <h1 id="测试"><a class="header" href="#测试">测试</a></h1>
 <p>Query engines are complex, and it is easy to inadvertently introduce subtle bugs that could result in queries returning incorrect results, so it is important to have rigorous testing in place.</p>
 <h2 id="unit-testing"><a class="header" href="#unit-testing">Unit Testing</a></h2>
 <p>An excellent first step is to write unit tests for the individual operators and expressions, asserting that they produce the correct output for a given input. It is also essential to cover error cases.</p>
@@ -316,7 +316,7 @@ fun `gteq doubles`() {
             Scan: employee.csv; projection=None
 </code></pre>
 <p>This straightforward approach to fuzzing will produce a high percentage of invalid plans. It could be improved to reduce the risk of creating invalid logical plans and expressions by adding more contextual awareness. For example, generating an <code>AND</code> expression could generate left and right expressions that produce a Boolean result. However, there is a danger in only creating correct plans because it could limit the test coverage. Ideally, it should be possible to configure the fuzzer with rules for producing query plans with different characteristics.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 
                     </main>

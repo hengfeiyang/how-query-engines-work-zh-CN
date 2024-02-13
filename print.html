@@ -739,11 +739,11 @@ class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
 <p>请注意，在此实现中，聚合计划的输出是通过分组列和聚合表达式来组织的。通常需要将聚合逻辑计划包装在映射中，以便按照原始查询中的请求顺序返回列。</p>
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="building-logical-plans"><a class="header" href="#building-logical-plans">Building Logical Plans</a></h1>
-<p><em>The source code discussed in this chapter can be found in the <code>dataframe</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
-<h2 id="building-logical-plans-the-hard-way"><a class="header" href="#building-logical-plans-the-hard-way">Building Logical Plans The Hard Way</a></h2>
-<p>Now that we have defined classes for a subset of logical plans, we can combine them programmatically.</p>
-<p>Here is some verbose code for building a plan for the query <code>SELECT * FROM employee WHERE state = 'CO'</code> against a CSV file containing the columns <code>id, first_name, last_name, state, job_title, salary</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="构建逻辑计划"><a class="header" href="#构建逻辑计划">构建逻辑计划</a></h1>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>dataframe</code> 模块中找到。</em></p>
+<h2 id="用困难的方式构建逻辑计划"><a class="header" href="#用困难的方式构建逻辑计划">用困难的方式构建逻辑计划</a></h2>
+<p>既然我们已经为逻辑计划的子集定义了类，我们就可以以编程方式组合它们。</p>
+<p>这里有一些具体的代码，用于构建针对包含列 <code>id, first_name, last_name, state, job_title, salary</code> 的 CSV 文件的查询 <code>SELECT * FROM employee WHERE state = 'CO'</code> 的计划。</p>
 <pre><code class="language-kotlin">// create a plan to represent the data source
 val csv = CsvDataSource("employee.csv")
 
@@ -765,12 +765,12 @@ val plan = Projection(selection, projectionList)
 // print the plan
 println(format(plan))
 </code></pre>
-<p>This prints the following plan:</p>
+<p>此操作将打印以下计划：</p>
 <pre><code>Projection: #id, #first_name, #last_name, #state, #salary
     Filter: #state = 'CO'
         Scan: employee; projection=None
 </code></pre>
-<p>The same code can also be written more concisely like this:</p>
+<p>同样的代码也可以像这样写得更加简洁：</p>
 <pre><code class="language-kotlin">val plan = Projection(
   Selection(
     Scan("employee", CsvDataSource("employee.csv"), listOf()),
@@ -784,10 +784,10 @@ println(format(plan))
 )
 println(format(plan))
 </code></pre>
-<p>Although this is more concise, it is also harder to interpret, so it would be nice to have a more elegant way to create logical plans. This is where a DataFrame interface can help.</p>
-<h2 id="building-logical-plans-using-dataframes"><a class="header" href="#building-logical-plans-using-dataframes">Building Logical Plans using DataFrames</a></h2>
-<p>Implementing a DataFrame style API allows us to build logical query plans in a much more user-friendly way. A DataFrame is just an abstraction around a logical query plan and has methods to perform transformations and actions. It is similar to a fluent-style builder API.</p>
-<p>Here is a minimal starting point for a DataFrame interface that allows us to apply projections and selections to an existing DataFrame.</p>
+<p>虽然这样更加简洁，但也更难以解释，所以最好能有一种更优雅的方式来创建逻辑计划。这就是 <code>DataFrame</code> 接口能够帮助到我们的地方。</p>
+<h2 id="使用-dataframe-构建逻辑计划"><a class="header" href="#使用-dataframe-构建逻辑计划">使用 DataFrame 构建逻辑计划</a></h2>
+<p>实现一个 DataFrame 风格的 API 允许我们以一种更加用户友好的方式构建逻辑查询计划。<code>DataFrame</code> 只是逻辑查询计划的抽象，并且具有执行转换和操作的方法。它类似于 <code>fluent-style</code> 的构建器 API。</p>
+<p>这是一个 <code>DataFrame</code> 接口的最小化示例，它允许我们将 映射（projection）和 过滤器（selection）应用于现有的 <code>DataFrame</code>。</p>
 <pre><code class="language-kotlin">interface DataFrame {
 
   /** Apply a projection */
@@ -808,7 +808,7 @@ println(format(plan))
 
 }
 </code></pre>
-<p>Here is the implementation of this interface.</p>
+<p>下面是这个接口的实现。</p>
 <pre><code class="language-kotlin">class DataFrameImpl(private val plan: LogicalPlan) : DataFrame {
 
   override fun project(expr: List&lt;LogicalExpr&gt;): DataFrame {
@@ -834,8 +834,8 @@ println(format(plan))
 
 }
 </code></pre>
-<p>Before we can apply a projection or selection, we need a way to create an initial DataFrame that represents an underlying data source. This is usually obtained through an execution context.</p>
-<p>Here is a simple starting point for an execution context that we will enhance later.</p>
+<p>在应用 映射（projection）或 过滤器（selection）之前，我们需要一种方法来创建表示底层数据源的初始 DataFrame。这通常是通过执行上下文获得的。</p>
+<p>这是执行上下文的一个简单开始，我们稍后将对其进行增强。</p>
 <pre><code class="language-kotlin">class ExecutionContext {
 
   fun csv(filename: String): DataFrame {
@@ -847,7 +847,7 @@ println(format(plan))
   }
 }
 </code></pre>
-<p>With this groundwork in place, we can now create a logical query plan using the context and the DataFrame API.</p>
+<p>有了这些基础工作，我们现在可以使用上下文和 DataFrame API 创建逻辑查询计划。</p>
 <pre><code class="language-kotlin">val ctx = ExecutionContext()
 
 val plan = ctx.csv("employee.csv")
@@ -858,14 +858,14 @@ val plan = ctx.csv("employee.csv")
                              Column("state"),
                              Column("salary")))
 </code></pre>
-<p>This is much cleaner and more intuitive, but we can go a step further and add some convenience methods to make this a little more comprehensible. This is specific to Kotlin, but other languages have similar concepts.</p>
-<p>We can create some convenience methods for creating the supported expression objects.</p>
+<p>尽管如此清晰直观，但我们还能进一步添加一些方便的方法使其变得更易理解。这是 Kotlin 特有的，但其他语言也有类似的概念。</p>
+<p>我们可以创建一些方便的方法来创建支持的表达式对象。</p>
 <pre><code class="language-kotlin">fun col(name: String) = Column(name)
 fun lit(value: String) = LiteralString(value)
 fun lit(value: Long) = LiteralLong(value)
 fun lit(value: Double) = LiteralDouble(value)
 </code></pre>
-<p>We can also define infix operators on the <code>LogicalExpr</code> interface for building binary expressions.</p>
+<p>我们还可以在 <code>LogicalExpr</code> 接口上定义中缀运算符来构建二元表达式。</p>
 <pre><code class="language-kotlin">infix fun LogicalExpr.eq(rhs: LogicalExpr): LogicalExpr { return Eq(this, rhs) }
 infix fun LogicalExpr.neq(rhs: LogicalExpr): LogicalExpr { return Neq(this, rhs) }
 infix fun LogicalExpr.gt(rhs: LogicalExpr): LogicalExpr { return Gt(this, rhs) }
@@ -873,7 +873,7 @@ infix fun LogicalExpr.gteq(rhs: LogicalExpr): LogicalExpr { return GtEq(this, rh
 infix fun LogicalExpr.lt(rhs: LogicalExpr): LogicalExpr { return Lt(this, rhs) }
 infix fun LogicalExpr.lteq(rhs: LogicalExpr): LogicalExpr { return LtEq(this, rhs) }
 </code></pre>
-<p>With these convenience methods in place, we can now write expressive code to build our logical query plan.</p>
+<p>有了这些方便的方法，我们现在可以编写富有表达力的代码来构建我们的逻辑查询计划了。</p>
 <pre><code class="language-kotlin">val df = ctx.csv(employeeCsv)
    .filter(col("state") eq lit("CO"))
    .select(listOf(
@@ -884,10 +884,10 @@ infix fun LogicalExpr.lteq(rhs: LogicalExpr): LogicalExpr { return LtEq(this, rh
        (col("salary") mult lit(0.1)) alias "bonus"))
    .filter(col("bonus") gt lit(1000))
 </code></pre>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="physical-plans--expressions"><a class="header" href="#physical-plans--expressions">Physical Plans &amp; Expressions</a></h1>
-<p><em>The source code discussed in this chapter can be found in the <code>physical-plan</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="物理计划和表达式"><a class="header" href="#物理计划和表达式">物理计划和表达式</a></h1>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>physical-plan</code> 模块中找到。</em></p>
 <p>The logical plans defined in chapter five specify what to do but not how to do it, and it is good practice to have separate logical and physical plans, although it is possible to combine them to reduce complexity.</p>
 <p>One reason to keep logical and physical plans separate is that sometimes there can be multiple ways to execute a particular operation, meaning that there is a one-to-many relationship between logical plans and physical plans.</p>
 <p>For example, there could be separate physical plans for single-process versus distributed execution, or CPU versus GPU execution.</p>
@@ -1326,10 +1326,10 @@ interface Accumulator {
 <p>KQuery does not yet implement subqueries.</p>
 <h2 id="creating-physical-plans"><a class="header" href="#creating-physical-plans">Creating Physical Plans</a></h2>
 <p>With our physical plans in place, the next step is to build a query planner to create physical plans from logical plans, which we cover in the next chapter.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="query-planner"><a class="header" href="#query-planner">Query Planner</a></h1>
-<p><em>The source code discussed in this chapter can be found in the <code>query-planner</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="查询规划器"><a class="header" href="#查询规划器">查询规划器</a></h1>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>query-planner</code> 模块中找到。</em></p>
 <p>We have defined logical and physical query plans, and now we need a query planner that can translate the logical plan into the physical plan.</p>
 <p>The query planner may choose different physical plans based on configuration options or based on the target platform's hardware capabilities. For example, queries could be executed on CPU or GPU, on a single node, or distributed in a cluster.</p>
 <h2 id="translating-logical-expressions"><a class="header" href="#translating-logical-expressions">Translating Logical Expressions</a></h2>
@@ -1439,10 +1439,10 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
   HashAggregateExec(input, groupExpr, aggregateExpr, plan.schema())
 }
 </code></pre>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="query-optimizations"><a class="header" href="#query-optimizations">Query Optimizations</a></h1>
-<p><em>The source code discussed in this chapter can be found in the <code>optimizer</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="查询优化"><a class="header" href="#查询优化">查询优化</a></h1>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>optimizer</code> 模块中找到。</em></p>
 <p>We now have functional query plans, but we rely on the end-user to construct the plans in an efficient way. For example, we expect the user to construct the plan so that filters happen as early as possible, especially before joins, since this limits the amount of data that needs to be processed.</p>
 <p>This is a good time to implement a simple rules-based query optimizer that can re-arrange the query plan to make it more efficient.</p>
 <p>This is going to become even more important once we start supporting SQL in chapter eleven, because the SQL language only defines how the query should work and does not always allow the user to specify the order that operators and expressions are evaluated in.</p>
@@ -1574,13 +1574,13 @@ fun extractColumns(expr: LogicalExpr,
 <p>Cost-based optimization refers to optimization rules that use statistics about the underlying data to determine a cost of executing a particular query and then choose an optimal execution plan by looking for one with a low cost. Good examples would be choosing which join algorithm to use, or choosing which order tables should be joined in, based on the sizes of the underlying tables.</p>
 <p>One major drawback to cost-based optimizations is that they depend on the availability of accurate and detailed statistics about the underlying data. Such statistics would typically include per-column statistics such as the number of null values, number of distinct values, min and max values, and histograms showing the distribution of values within the column. The histogram is essential to be able to detect that a predicate such as <code>state = 'CA'</code> is likely to produce more rows than <code>state = 'WY'</code> for example (California is the most populated US state, with 39 million residents, and Wyoming is the least populated state, with fewer than 1 million residents).</p>
 <p>When working with file formats such as Orc or Parquet, some of these statistics are available, but generally it is necessary to run a process to build these statistics, and when working with multiple terabytes of data, this can be prohibitive, and outweigh the benefit, especially for ad-hoc queries.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="query-execution"><a class="header" href="#query-execution">Query Execution</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="查询执行"><a class="header" href="#查询执行">查询执行</a></h1>
 <p>We are now able to write code to execute optimized queries against CSV files.</p>
 <p>Before we execute the query with KQuery, it might be useful to use a trusted alternative so that we know what the correct results should be and to get some baseline performance metrics for comparison.</p>
-<h2 id="apache-spark-example"><a class="header" href="#apache-spark-example">Apache Spark Example</a></h2>
-<p><em>The source code discussed in this chapter can be found in the <code>spark</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
+<h2 id="apache-spark-示例"><a class="header" href="#apache-spark-示例">Apache Spark 示例</a></h2>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>spark</code> 模块中找到。</em></p>
 <p>First, we need to create a Spark context. Note that we are using a single thread for execution so that we can make a relatively fair comparison to the performance of the single threaded implementation in KQuery.</p>
 <pre><code class="language-scala">val spark = SparkSession.builder()
   .master("local[1]")
@@ -1708,10 +1708,10 @@ println("Query took $time ms")
 Query took 36090 ms
 </code></pre>
 <p>The results are the same, but the query took about five times as long to execute. This clearly shows the benefit of the projection push-down optimization that was discussed in the previous chapter.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="sql-support"><a class="header" href="#sql-support">SQL Support</a></h1>
-<p><em>The source code discussed in this chapter can be found in the <code>sql</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="sql-支持"><a class="header" href="#sql-支持">SQL 支持</a></h1>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>sql</code> 模块中找到。</em></p>
 <p>In addition to having the ability to hand-code logical plans, it would be more convenient in some cases to just write SQL. In this chapter, we will build a SQL parser and query planner that can translate SQL queries into logical plans.</p>
 <h2 id="tokenizer"><a class="header" href="#tokenizer">Tokenizer</a></h2>
 <p>The first step is to convert the SQL query string into a list of tokens representing keywords, literals, identifiers, and operators.</p>
@@ -2012,9 +2012,9 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
 </code></pre>
 <h2 id="planning-for-aggregate-queries"><a class="header" href="#planning-for-aggregate-queries">Planning for Aggregate Queries</a></h2>
 <p>As you can see, the SQL query planner is relatively complex and the code for parsing aggregate queries is quite involved. If you are interested in learning more, please refer to the source code.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="parallel-query-execution"><a class="header" href="#parallel-query-execution">Parallel Query Execution</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="执行并发查询"><a class="header" href="#执行并发查询">执行并发查询</a></h1>
 <p>So far, we have been using a single thread to execute queries against individual files. This approach is not very scalable, because queries will take longer to run with larger files or with multiple files. The next step is to implement distributed query execution so that query execution can utilize multiple CPU cores and multiple servers.</p>
 <p>The simplest form of distributed query execution is parallel query execution utilizing multiple CPU cores on a single node using threads.</p>
 <p>The NYC taxi data set is already conveniently partitioned because there is one CSV file for each month of each year, meaning that there are twelve partitions for the 2019 data set, for example. The most straightforward approach to parallel query execution would be to use one thread per partition to execute the same query in parallel and then combine the results. Suppose this code is running on a computer with six CPU cores with hyper-threading support. In that case, these twelve queries should execute in the same elapsed time as running one of the queries on a single thread, assuming that each month has a similar amount of data.</p>
@@ -2111,9 +2111,9 @@ ctx.execute(df).forEach { println(it) }
 <h2 id="parallel-joins"><a class="header" href="#parallel-joins">Parallel Joins</a></h2>
 <p>When performing an inner join with a single thread, a simple approach is to load one side of the join into memory and then scan the other side, performing lookups against the data stored in memory. This classic Hash Join algorithm is efficient if one side of the join can fit into memory.</p>
 <p>The parallel version of this is known as a Partitioned Hash Join or Parallel Hash Join. It involves partitioning both inputs based on the join keys and performing a classic Hash Join on each pair of input partitions.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="distributed-query-execution"><a class="header" href="#distributed-query-execution">Distributed Query Execution</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="执行分布式查询"><a class="header" href="#执行分布式查询">执行分布式查询</a></h1>
 <p>The previous section on Parallel Query Execution covered some fundamental concepts such as partitioning, which we will build on in this section.</p>
 <p>To somewhat over-simplify the concept of distributed query execution, the goal is to be able to create a physical query plan which defines how work is distributed to a number of "executors" in a cluster. Distributed query plans will typically contain new operators that describe how data is exchanged between executors at various points during query execution.</p>
 <p>In the following sections we will explore how different types of plans are executed in a distributed environment and then discuss building a distributed query scheduler.</p>
@@ -2276,9 +2276,9 @@ message LimitNode {
 </ul>
 <p>Query costs can be computed upfront using an algorithm if enough information is known ahead of time about the data, such as how large the data is, the cardinality of the partition of join keys used in the query, the number of partitions, and so on. This all depends on certain statistics being available for the data set being queried.</p>
 <p>Another approach is to just start running a query and have each operator adapt based on the input data it receives. Apache Spark 3.0.0 introduced an Adaptive Query Execution feature that does just this.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="测试"><a class="header" href="#测试">测试</a></h1>
 <p>Query engines are complex, and it is easy to inadvertently introduce subtle bugs that could result in queries returning incorrect results, so it is important to have rigorous testing in place.</p>
 <h2 id="unit-testing"><a class="header" href="#unit-testing">Unit Testing</a></h2>
 <p>An excellent first step is to write unit tests for the individual operators and expressions, asserting that they produce the correct output for a given input. It is also essential to cover error cases.</p>
@@ -2415,9 +2415,9 @@ fun `gteq doubles`() {
             Scan: employee.csv; projection=None
 </code></pre>
 <p>This straightforward approach to fuzzing will produce a high percentage of invalid plans. It could be improved to reduce the risk of creating invalid logical plans and expressions by adding more contextual awareness. For example, generating an <code>AND</code> expression could generate left and right expressions that produce a Boolean result. However, there is a danger in only creating correct plans because it could limit the test coverage. Ideally, it should be possible to configure the fuzzer with rules for producing query plans with different characteristics.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="benchmarks"><a class="header" href="#benchmarks">Benchmarks</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="基准测试"><a class="header" href="#基准测试">基准测试</a></h1>
 <p>Each query engine is unique in terms of performance, scalability, and resource requirements, often with different trade-offs. It is important to have good benchmarks to understand the performance and scalability characteristics.</p>
 <h2 id="measuring-performance"><a class="header" href="#measuring-performance">Measuring Performance</a></h2>
 <p>Performance is often the simplest characteristic to measure and usually refers to the time it takes to perform a particular operation. For example, benchmarks can be built to measure the performance of specific queries or categories of query.</p>
@@ -2488,13 +2488,13 @@ fun `gteq doubles`() {
 <p>TPC benchmarks are seen as the "gold standard" in the industry and are complex and time consuming to implement fully. Also, results for these benchmarks can only be published by TPC members and only after the benchmarks have been audited by the TPC. Taking TPC-DS as an example, the only companies to have ever published official results at the time of writing are Alibaba.com, H2C, SuperMicro, and Databricks.</p>
 <p>However, the TPC has a Fair Use policy that allows non-members to create unofficial benchmarks based on TPC benchmarks, as long as certain conditions are followed, such as prefixing any use of the term TPC with "derived from TPC". For example, "Performance of Query derived from TPC-DS Query 14". TPC Copyright Notice and License Agreements must also be maintained. There are also limitations on the types of metrics that can be published.</p>
 <p>Many open source projects simply measure the time to execute individual queries from the TPC benchmark suites and use this as a way to track performance over time and for comparison with other query engines.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="further-resources"><a class="header" href="#further-resources">Further Resources</a></h1>
-<p>I hope that you found this book useful and that you now have a better understanding of the internals of query engines. If there are topics that you feel haven't been covered adequately, or at all, I would love to hear about it so I can consider adding additional content in a future revision of this book.</p>
-<p>Feedback can be posted on the public forum on the <a href="https://community.leanpub.com/t/feedback/2160">Leanpub site</a>, or you can message me directly via twitter at <a href="https://twitter.com/andygrove_io">@andygrove_io</a>.</p>
-<h2 id="open-source-projects"><a class="header" href="#open-source-projects">Open-Source Projects</a></h2>
-<p>There are numerous open-source projects that contain query engines and working with these projects is a great way to learn more about the topic. Here are just a few examples of popular open-source query engines.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="更多资源"><a class="header" href="#更多资源">更多资源</a></h1>
+<p>我希望你觉得这本书有用，并且您现在对查询引擎的内部结构有更好的了解。如果您认为某些主题没有被充分涵盖，或者根本没有涵盖，我很乐意听到你的想法，以便我考虑在未来的修订中添加额外的内容。</p>
+<p>可以在 <a href="https://community.leanpub.com/t/feedback/2160">Leanpub 网站</a> 上的公共论坛上发布反馈，或者通过 twitter 直接给我 <a href="https://twitter.com/andygrove_io">@andygrove_io</a> 留言。</p>
+<h2 id="开源项目"><a class="header" href="#开源项目">开源项目</a></h2>
+<p>有许多包含查询引擎的开源项目，使用这些项目可以更好的了解这个主题。以下只是流行的开源查询引擎的几个示例。</p>
 <ul>
 <li>Apache Arrow</li>
 <li>Apache Calcite</li>
@@ -2507,13 +2507,13 @@ fun `gteq doubles`() {
 <li>NVIDIA RAPIDS Accelerator for Apache Spark</li>
 </ul>
 <h2 id="youtube"><a class="header" href="#youtube">YouTube</a></h2>
-<p>I only recently discovered Andy Pavlo's lecture series, which is available on YouTube (<a href="https://www.youtube.com/playlist?list=PLSE8ODhjZXjasmrEd2_Yi1deeE360zv5O">here</a>). This covers much more than just query engines, but there is extensive content on query optimization and execution. I highly recommend watching these videos.</p>
-<h2 id="sample-data"><a class="header" href="#sample-data">Sample Data</a></h2>
-<p>Earlier chapters reference the <a href="https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page">New York City Taxi &amp; Limousine Commission Trip Record Data</a> data set. The yellow and green taxi trip records include fields capturing pick-up and drop-off dates/times, pick-up and drop-off locations, trip distances, itemized fares, rate types, payment types, and driver-reported passenger counts. The data is provided in CSV format. The KQuery project contains source code for converting these CSV files into Parquet format.</p>
-<p>Data can be downloaded by following the links on the website or by downloading the files directly from S3. For example, users on Linux or Mac can use <code>curl</code> or <code>wget</code> to download the January 2019 data for Yellow Taxis with the following command and create scripts to download other files based on the file naming convention.</p>
+<p>我最近才发现 Andy Pavlo 的系列讲座，可以在 YouTube 上找到（<a href="https://www.youtube.com/playlist?list=PLSE8ODhjZXjasmrEd2_Yi1deeE360zv5O">here</a>）。这不仅仅涵盖了查询引擎，还广泛地介绍了查询优化和执行方面的内容。强烈推荐观看这些视频。</p>
+<h2 id="样本数据"><a class="header" href="#样本数据">样本数据</a></h2>
+<p>前面的章节引用了 <a href="https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page">纽约市出租车及豪华轿车委员会行程记录数据</a> 数据集。黄色和绿色出租车行程记录包括上车和下车日期/时间、上车和下车地点、行程距离、明细票价、费率类型、付款类型和司机报告的乘客数量的字段。数据以 CSV 格式提供。 KQuery 项目包含用于将这些 CSV 文件转换为 Parquet 格式的源代码。</p>
+<p>可以通过网站上的链接或直接从 S3 来下载数据。例如，Linux 或 Mac 上的用户可以通过以下命令使用 <code>curl</code> 或者 <code>wget</code> 下载 Yellow Taxis 2019 年 1 月的数据，还可以创建脚本以根据文件命名规范下载其他文件。</p>
 <pre><code>wget https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2019-01.csv
 </code></pre>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 
                     </main>

@@ -179,8 +179,8 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="query-planner"><a class="header" href="#query-planner">Query Planner</a></h1>
-<p><em>The source code discussed in this chapter can be found in the <code>query-planner</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
+                        <h1 id="查询规划器"><a class="header" href="#查询规划器">查询规划器</a></h1>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>query-planner</code> 模块中找到。</em></p>
 <p>We have defined logical and physical query plans, and now we need a query planner that can translate the logical plan into the physical plan.</p>
 <p>The query planner may choose different physical plans based on configuration options or based on the target platform's hardware capabilities. For example, queries could be executed on CPU or GPU, on a single node, or distributed in a cluster.</p>
 <h2 id="translating-logical-expressions"><a class="header" href="#translating-logical-expressions">Translating Logical Expressions</a></h2>
@@ -290,7 +290,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
   HashAggregateExec(input, groupExpr, aggregateExpr, plan.schema())
 }
 </code></pre>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 
                     </main>

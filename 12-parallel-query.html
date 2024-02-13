@@ -179,7 +179,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="parallel-query-execution"><a class="header" href="#parallel-query-execution">Parallel Query Execution</a></h1>
+                        <h1 id="执行并发查询"><a class="header" href="#执行并发查询">执行并发查询</a></h1>
 <p>So far, we have been using a single thread to execute queries against individual files. This approach is not very scalable, because queries will take longer to run with larger files or with multiple files. The next step is to implement distributed query execution so that query execution can utilize multiple CPU cores and multiple servers.</p>
 <p>The simplest form of distributed query execution is parallel query execution utilizing multiple CPU cores on a single node using threads.</p>
 <p>The NYC taxi data set is already conveniently partitioned because there is one CSV file for each month of each year, meaning that there are twelve partitions for the 2019 data set, for example. The most straightforward approach to parallel query execution would be to use one thread per partition to execute the same query in parallel and then combine the results. Suppose this code is running on a computer with six CPU cores with hyper-threading support. In that case, these twelve queries should execute in the same elapsed time as running one of the queries on a single thread, assuming that each month has a similar amount of data.</p>
@@ -276,7 +276,7 @@ ctx.execute(df).forEach { println(it) }
 <h2 id="parallel-joins"><a class="header" href="#parallel-joins">Parallel Joins</a></h2>
 <p>When performing an inner join with a single thread, a simple approach is to load one side of the join into memory and then scan the other side, performing lookups against the data stored in memory. This classic Hash Join algorithm is efficient if one side of the join can fit into memory.</p>
 <p>The parallel version of this is known as a Partitioned Hash Join or Parallel Hash Join. It involves partitioning both inputs based on the join keys and performing a classic Hash Join on each pair of input partitions.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 
                     </main>
