@@ -1,12 +1,12 @@
-# Building Logical Plans
+# 构建逻辑计划
 
-_The source code discussed in this chapter can be found in the `dataframe` module of the[ KQuery project](https://github.com/andygrove/how-query-engines-work)._
+_本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `dataframe` 模块中找到。_
 
-## Building Logical Plans The Hard Way
+## 用困难的方式构建逻辑计划
 
-Now that we have defined classes for a subset of logical plans, we can combine them programmatically.
+既然我们已经为逻辑计划的子集定义了类，我们就可以以编程方式组合它们。
 
-Here is some verbose code for building a plan for the query `SELECT * FROM employee WHERE state = 'CO'` against a CSV file containing the columns `id, first_name, last_name, state, job_title, salary`.
+这里有一些具体的代码，用于构建针对包含列 `id, first_name, last_name, state, job_title, salary` 的 CSV 文件的查询 `SELECT * FROM employee WHERE state = 'CO'` 的计划。
 
 ```kotlin
 // create a plan to represent the data source
@@ -31,7 +31,7 @@ val plan = Projection(selection, projectionList)
 println(format(plan))
 ```
 
-This prints the following plan:
+此操作将打印以下计划：
 
 ```
 Projection: #id, #first_name, #last_name, #state, #salary
@@ -39,7 +39,7 @@ Projection: #id, #first_name, #last_name, #state, #salary
         Scan: employee; projection=None
 ```
 
-The same code can also be written more concisely like this:
+同样的代码也可以像这样写得更加简洁：
 
 ```kotlin
 val plan = Projection(
@@ -56,13 +56,13 @@ val plan = Projection(
 println(format(plan))
 ```
 
-Although this is more concise, it is also harder to interpret, so it would be nice to have a more elegant way to create logical plans. This is where a DataFrame interface can help.
+虽然这样更加简洁，但也更难以解释，所以最好能有一种更优雅的方式来创建逻辑计划。这就是 `DataFrame` 接口能够帮助到我们的地方。
 
-## Building Logical Plans using DataFrames
+## 使用 DataFrame 构建逻辑计划
 
-Implementing a DataFrame style API allows us to build logical query plans in a much more user-friendly way. A DataFrame is just an abstraction around a logical query plan and has methods to perform transformations and actions. It is similar to a fluent-style builder API.
+实现一个 DataFrame 风格的 API 允许我们以一种更加用户友好的方式构建逻辑查询计划。`DataFrame` 只是逻辑查询计划的抽象，并且具有执行转换和操作的方法。它类似于 `fluent-style` 的构建器 API。
 
-Here is a minimal starting point for a DataFrame interface that allows us to apply projections and selections to an existing DataFrame.
+这是一个 `DataFrame` 接口的最小化示例，它允许我们将 映射（projection）和 过滤器（selection）应用于现有的 `DataFrame`。
 
 ```kotlin
 interface DataFrame {
@@ -86,7 +86,7 @@ interface DataFrame {
 }
 ```
 
-Here is the implementation of this interface.
+下面是这个接口的实现。
 
 ```kotlin
 class DataFrameImpl(private val plan: LogicalPlan) : DataFrame {
@@ -115,9 +115,9 @@ class DataFrameImpl(private val plan: LogicalPlan) : DataFrame {
 }
 ```
 
-Before we can apply a projection or selection, we need a way to create an initial DataFrame that represents an underlying data source. This is usually obtained through an execution context.
+在应用 映射（projection）或 过滤器（selection）之前，我们需要一种方法来创建表示底层数据源的初始 DataFrame。这通常是通过执行上下文获得的。
 
-Here is a simple starting point for an execution context that we will enhance later.
+这是执行上下文的一个简单开始，我们稍后将对其进行增强。
 
 ```kotlin
 class ExecutionContext {
@@ -132,7 +132,7 @@ class ExecutionContext {
 }
 ```
 
-With this groundwork in place, we can now create a logical query plan using the context and the DataFrame API.
+有了这些基础工作，我们现在可以使用上下文和 DataFrame API 创建逻辑查询计划。
 
 ```kotlin
 val ctx = ExecutionContext()
@@ -146,9 +146,9 @@ val plan = ctx.csv("employee.csv")
                              Column("salary")))
 ```
 
-This is much cleaner and more intuitive, but we can go a step further and add some convenience methods to make this a little more comprehensible. This is specific to Kotlin, but other languages have similar concepts.
+尽管如此清晰直观，但我们还能进一步添加一些方便的方法使其变得更易理解。这是 Kotlin 特有的，但其他语言也有类似的概念。
 
-We can create some convenience methods for creating the supported expression objects.
+我们可以创建一些方便的方法来创建支持的表达式对象。
 
 ```kotlin
 fun col(name: String) = Column(name)
@@ -157,7 +157,7 @@ fun lit(value: Long) = LiteralLong(value)
 fun lit(value: Double) = LiteralDouble(value)
 ```
 
-We can also define infix operators on the `LogicalExpr` interface for building binary expressions.
+我们还可以在 `LogicalExpr` 接口上定义中缀运算符来构建二元表达式。
 
 ```kotlin
 infix fun LogicalExpr.eq(rhs: LogicalExpr): LogicalExpr { return Eq(this, rhs) }
@@ -168,7 +168,7 @@ infix fun LogicalExpr.lt(rhs: LogicalExpr): LogicalExpr { return Lt(this, rhs) }
 infix fun LogicalExpr.lteq(rhs: LogicalExpr): LogicalExpr { return LtEq(this, rhs) }
 ```
 
-With these convenience methods in place, we can now write expressive code to build our logical query plan.
+有了这些方便的方法，我们现在可以编写富有表达力的代码来构建我们的逻辑查询计划了。
 
 ```kotlin
 val df = ctx.csv(employeeCsv)
@@ -182,6 +182,6 @@ val df = ctx.csv(employeeCsv)
    .filter(col("bonus") gt lit(1000))
 ```
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**

@@ -1,12 +1,12 @@
-# Further Resources
+# 更多资源
 
-I hope that you found this book useful and that you now have a better understanding of the internals of query engines. If there are topics that you feel haven't been covered adequately, or at all, I would love to hear about it so I can consider adding additional content in a future revision of this book.
+我希望你觉得这本书有用，并且您现在对查询引擎的内部结构有更好的了解。如果您认为某些主题没有被充分涵盖，或者根本没有涵盖，我很乐意听到你的想法，以便我考虑在未来的修订中添加额外的内容。
 
-Feedback can be posted on the public forum on the [Leanpub site](https://community.leanpub.com/t/feedback/2160), or you can message me directly via twitter at [@andygrove_io](https://twitter.com/andygrove_io).
+可以在 [Leanpub 网站](https://community.leanpub.com/t/feedback/2160) 上的公共论坛上发布反馈，或者通过 twitter 直接给我 [@andygrove_io](https://twitter.com/andygrove_io) 留言。
 
-## Open-Source Projects
+## 开源项目
 
-There are numerous open-source projects that contain query engines and working with these projects is a great way to learn more about the topic. Here are just a few examples of popular open-source query engines.
+有许多包含查询引擎的开源项目，使用这些项目可以更好的了解这个主题。以下只是流行的开源查询引擎的几个示例。
 
 - Apache Arrow
 - Apache Calcite
@@ -20,18 +20,18 @@ There are numerous open-source projects that contain query engines and working w
 
 ## YouTube
 
-I only recently discovered Andy Pavlo's lecture series, which is available on YouTube ([here](https://www.youtube.com/playlist?list=PLSE8ODhjZXjasmrEd2_Yi1deeE360zv5O)). This covers much more than just query engines, but there is extensive content on query optimization and execution. I highly recommend watching these videos.
+我最近才发现 Andy Pavlo 的系列讲座，可以在 YouTube 上找到（[here](https://www.youtube.com/playlist?list=PLSE8ODhjZXjasmrEd2_Yi1deeE360zv5O)）。这不仅仅涵盖了查询引擎，还广泛地介绍了查询优化和执行方面的内容。强烈推荐观看这些视频。
 
-## Sample Data
+## 样本数据
 
-Earlier chapters reference the [New York City Taxi & Limousine Commission Trip Record Data](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page) data set. The yellow and green taxi trip records include fields capturing pick-up and drop-off dates/times, pick-up and drop-off locations, trip distances, itemized fares, rate types, payment types, and driver-reported passenger counts. The data is provided in CSV format. The KQuery project contains source code for converting these CSV files into Parquet format.
+前面的章节引用了 [纽约市出租车及豪华轿车委员会行程记录数据](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page) 数据集。黄色和绿色出租车行程记录包括上车和下车日期/时间、上车和下车地点、行程距离、明细票价、费率类型、付款类型和司机报告的乘客数量的字段。数据以 CSV 格式提供。 KQuery 项目包含用于将这些 CSV 文件转换为 Parquet 格式的源代码。
 
-Data can be downloaded by following the links on the website or by downloading the files directly from S3. For example, users on Linux or Mac can use `curl` or `wget` to download the January 2019 data for Yellow Taxis with the following command and create scripts to download other files based on the file naming convention.
+可以通过网站上的链接或直接从 S3 来下载数据。例如，Linux 或 Mac 上的用户可以通过以下命令使用 `curl` 或者 `wget` 下载 Yellow Taxis 2019 年 1 月的数据，还可以创建脚本以根据文件命名规范下载其他文件。
 
 ```
 wget https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2019-01.csv
 ```
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**

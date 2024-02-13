@@ -1,6 +1,6 @@
-# Physical Plans & Expressions
+# 物理计划和表达式
 
-_The source code discussed in this chapter can be found in the `physical-plan` module of the[ KQuery project](https://github.com/andygrove/how-query-engines-work)._
+_本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `physical-plan` 模块中找到。_
 
 The logical plans defined in chapter five specify what to do but not how to do it, and it is good practice to have separate logical and physical plans, although it is possible to combine them to reduce complexity.
 
@@ -532,6 +532,6 @@ KQuery does not yet implement subqueries.
 
 With our physical plans in place, the next step is to build a query planner to create physical plans from logical plans, which we cover in the next chapter.
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**

@@ -1,4 +1,4 @@
-# Distributed Query Execution
+# 执行分布式查询
 
 The previous section on Parallel Query Execution covered some fundamental concepts such as partitioning, which we will build on in this section.
 
@@ -238,7 +238,6 @@ Query costs can be computed upfront using an algorithm if enough information is 
 
 Another approach is to just start running a query and have each operator adapt based on the input data it receives. Apache Spark 3.0.0 introduced an Adaptive Query Execution feature that does just this.
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**
-

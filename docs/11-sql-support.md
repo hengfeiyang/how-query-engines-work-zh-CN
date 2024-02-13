@@ -1,6 +1,6 @@
-# SQL Support
+# SQL 支持
 
-_The source code discussed in this chapter can be found in the `sql` module of the[ KQuery project](https://github.com/andygrove/how-query-engines-work)._
+_本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `sql` 模块中找到。_
 
 In addition to having the ability to hand-code logical plans, it would be more convenient in some cases to just write SQL. In this chapter, we will build a SQL parser and query planner that can translate SQL queries into logical plans.
 
@@ -390,6 +390,6 @@ fun createDataFrame(select: SqlSelect, tables: Map<String, DataFrame>) : DataFra
 
 As you can see, the SQL query planner is relatively complex and the code for parsing aggregate queries is quite involved. If you are interested in learning more, please refer to the source code.
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**

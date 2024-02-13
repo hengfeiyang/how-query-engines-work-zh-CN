@@ -1,11 +1,12 @@
-# Query Execution
+# 查询执行
+
 We are now able to write code to execute optimized queries against CSV files.
 
 Before we execute the query with KQuery, it might be useful to use a trusted alternative so that we know what the correct results should be and to get some baseline performance metrics for comparison.
 
-## Apache Spark Example
+## Apache Spark 示例
 
-_The source code discussed in this chapter can be found in the `spark` module of the[ KQuery project](https://github.com/andygrove/how-query-engines-work)._
+_本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `spark` 模块中找到。_
 
 First, we need to create a Spark context. Note that we are using a single thread for execution so that we can make a relatively fair comparison to the performance of the single threaded implementation in KQuery.
 
@@ -163,6 +164,6 @@ Query took 36090 ms
 
 The results are the same, but the query took about five times as long to execute. This clearly shows the benefit of the projection push-down optimization that was discussed in the previous chapter.
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**
