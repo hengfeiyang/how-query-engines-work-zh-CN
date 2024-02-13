@@ -428,17 +428,17 @@ df.show()
 <p>The Optimized Row Columnar (Orc) 优化行列 格式类似于 Parquet，数据以称为 “stripes” 的列式格式批量存储。</p>
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="logical-plans--expressions"><a class="header" href="#logical-plans--expressions">Logical Plans &amp; Expressions</a></h1>
-<p><em>The source code discussed in this chapter can be found in the <code>logical-plan</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
-<p>A logical plan represents a relation (a set of tuples) with a known schema. Each logical plan can have zero or more logical plans as inputs. It is convenient for a logical plan to expose its child plans so that a visitor pattern can be used to walk through the plan.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="逻辑计划和表达式"><a class="header" href="#逻辑计划和表达式">逻辑计划和表达式</a></h1>
+<p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>logical-plan</code> 模块中找到。</em></p>
+<p>逻辑计划表示具有已知结构的关系（一组元组）。每个逻辑计划可以有零个或多个逻辑计划作为输入。逻辑计划可以很方便地公开其子计划，以便可以使用访问者模式来遍历该计划。</p>
 <pre><code class="language-kotlin">interface LogicalPlan {
   fun schema(): Schema
   fun children(): List&lt;LogicalPlan&gt;
 }
 </code></pre>
-<h2 id="printing-logical-plans"><a class="header" href="#printing-logical-plans">Printing Logical Plans</a></h2>
-<p>It is important to be able to print logical plans in human-readable form to help with debugging. Logical plans are typically printed as a hierarchical structure with child nodes indented.</p>
-<p>We can implement a simple recursive helper function to format a logical plan.</p>
+<h2 id="打印逻辑计划"><a class="header" href="#打印逻辑计划">打印逻辑计划</a></h2>
+<p>能够以人类可读形式打印逻辑计划对于帮助调试非常重要。逻辑计划通常打印为带有缩进子节点的分层结构。</p>
+<p>我们可以实现一个简单的递归辅助函数来格式化逻辑计划。</p>
 <pre><code class="language-kotlin">fun format(plan: LogicalPlan, indent: Int = 0): String {
   val b = StringBuilder()
   0.rangeTo(indent).forEach { b.append("\t") }
@@ -447,20 +447,20 @@ df.show()
   return b.toString()
 }
 </code></pre>
-<p>Here is an example of a logical plan formatted using this method.</p>
+<p>以下是使用此方法格式化逻辑计划的一个例子。</p>
 <pre><code>Projection: #id, #first_name, #last_name, #state, #salary
   Filter: #state = 'CO'
     Scan: employee.csv; projection=None
 </code></pre>
-<h2 id="serialization"><a class="header" href="#serialization">Serialization</a></h2>
-<p>It is sometimes desirable to be able to serialize query plans so that they can easily be transferred to another process. It is good practice to add serialization early on as a precaution against accidentally referencing data structures that cannot be serialized (such as file handles or database connections).</p>
-<p>One approach would be to use the implementation languages' default mechanism for serializing data structures to/from a format such as JSON. In Java, the Jackson library could be used. Kotlin has the <code>kotlinx.serialization</code> library, and Rust has a serde crate, for example.</p>
-<p>Another option would be to define a language-agnostic serialization format using Avro, Thrift, or Protocol Buffers and then write code to translate between this format and the language-specific implementation.</p>
-<p>Since publishing the first edition of this book, a new standard named <a href="https://substrait.io/">"substrait"</a> has emerged, with the goal of providing cross-language serialization for relational algebra. I am excited about this project and predict that it will become the de-facto standard for representing query plans and open up many integration possibilities. For example, it would be possible to use a mature Java-based query planner such as Apache Calcite, serialize the plan in Substrait format, and then execute the plan in a query engine implemented in a lower-level language, such as C++ or Rust. For more information, visit https://substrait.io/.</p>
-<h2 id="logical-expressions"><a class="header" href="#logical-expressions">Logical Expressions</a></h2>
-<p>One of the fundamental building blocks of a query plan is the concept of an expression that can be evaluated against data at runtime.</p>
-<p>Here are some examples of expressions that are typically supported in query engines.</p>
-<div class="table-wrapper"><table><thead><tr><th>Expression</th><th>Examples</th></tr></thead><tbody>
+<h2 id="序列化"><a class="header" href="#序列化">序列化</a></h2>
+<p>有时希望能够序列化查询计划，以便可以轻松地将它们转移到另一个进程。最好尽早添加序列化，以防止意外引用无法序列化的数据结构（如文件句柄或数据库连接）。</p>
+<p>一种方法是使用实​​现语言的默认机制将数据结构序列化/反序列化为 JSON 等格式。在 Java 中可以使用 Jackson 库，Kotlin 有 <code>kotlinx.serialization</code> 库，Rust 则有 serde crate等。</p>
+<p>另一种选择可能是定义一种与语言无关的序列化格式，如 Avro、Thrift 或 Protocol Buffers，然后编写代码在此格式和特定于语言实现之间进行转换。</p>
+<p>自本书第一版发来以来，出现了一个名为 <a href="https://substrait.io/">“substrait”</a> 的新标准，其目标是为关系代数提供跨语言序列化。我对这个项目感到很兴奋，并预测它将成为表示查询计划的事实上的标准，并开辟许多集成的可能性。例如，可以使用成熟的基于 Java 的查询计划程序（例如 Apache Calcite），以 Substrait 格式序列化计划，然后在以较低级别语言（例如 C++ 或 Rust）实现的查询引擎中执行计划。欲了解更多信息，请访问 https://substrait.io/。</p>
+<h2 id="逻辑表达式"><a class="header" href="#逻辑表达式">逻辑表达式</a></h2>
+<p>表达式这一概念是查询计划的基本构建块之一，其可以在运行时对数据进行求值。</p>
+<p>以下是查询引擎中通常支持的一些表达式示例。</p>
+<div class="table-wrapper"><table><thead><tr><th>表达式</th><th>示例</th></tr></thead><tbody>
 <tr><td>Literal Value</td><td>"hello", 12.34</td></tr>
 <tr><td>Column Reference</td><td>user_id, first_name, last_name</td></tr>
 <tr><td>Math Expression</td><td>salary * state_tax</td></tr>
@@ -471,15 +471,15 @@ df.show()
 <tr><td>Aliased Expression</td><td>salary * 0.02 AS pay_increase</td></tr>
 </tbody></table>
 </div>
-<p>Of course, all of these expressions can be combined to form deeply nested expression trees. Expression evaluation is a textbook case of recursive programming.</p>
-<p>When we are planning queries, we will need to know some basic metadata about the output of an expression. Specifically, we need to have a name for the expression so that other expressions can reference it and we need to know the data type of the values that the expression will produce when evaluated so that we can validate that the query plan is valid. For example, if we have an expression <code>a + b</code> then it can only be valid if both <code>a</code> and <code>b</code> are numeric types.</p>
-<p>Also note that the data type of an expression can be dependent on the input data. For example, a column reference will have the data type of the column it is referencing, but a comparison expression always returns a Boolean value.</p>
+<p>当然，所有这些表达式都可以组合形成深层嵌套的表达式树。表达式求值是递归编程的典型案例。</p>
+<p>在规划查询时，我们需要了解有关表达式输出的一些基本元数据。具体来说，我们需要为表达式指定一个名称，以便其他表达式可以引用它，并且我们需要知道表达式求值时将生成的值的数据类型，以便我们可以验证查询计划是否有效。例如，如果我们有一个表达式 <code>a + b</code> ，那么只有当 <code>a</code> 和 <code>b</code> 都是数值类型时才有效。</p>
+<p>还需注意，表达式的数据类型可能取决于输入数据。例如，列引用将具有它所引用的列的数据类型，但比较表达式始终返回布尔值。</p>
 <pre><code class="language-kotlin">interface LogicalExpr {
   fun toField(input: LogicalPlan): Field
 }
 </code></pre>
-<h2 id="column-expressions"><a class="header" href="#column-expressions">Column Expressions</a></h2>
-<p>The <code>Column</code> expression simply represents a reference to a named column. The metadata for this expression is derived by finding the named column in the input and returning that column's metadata. Note that the term "column" here refers to a column produced by the input logical plan and could represent a column in a data source, or it could represent the result of an expression being evaluated against other inputs.</p>
+<h3 id="列式表达式"><a class="header" href="#列式表达式">列式表达式</a></h3>
+<p><code>Column</code> 表达式仅代表对一个命名列的引用。该表达式的元数据是通过在输入中查找指定列并返回该列的元数据而派生的。请注意，此处的术语 <code>Column</code> 指的是由输入逻辑计划生成的列，并且可以表示数据源中的列，或者它可以表示针对其他输入求值的表达式的结果。</p>
 <pre><code class="language-kotlin">class Column(val name: String): LogicalExpr {
 
   override fun toField(input: LogicalPlan): Field {
@@ -493,9 +493,9 @@ df.show()
 
 }
 </code></pre>
-<h2 id="literal-expressions"><a class="header" href="#literal-expressions">Literal Expressions</a></h2>
-<p>We need the ability to represent literal values as expressions so that we can write expressions such as <code>salary * 0.05</code>.</p>
-<p>Here is an example expression for literal strings.</p>
+<h3 id="字面值表达式"><a class="header" href="#字面值表达式">字面值表达式</a></h3>
+<p>我们需要能够将字面值表示为表达式的能力，以便我们可以编写像 <code>salary * 0.05</code> 这样的表达式。</p>
+<p>这是一个用于字符串字面值的表达式示例。</p>
 <pre><code class="language-kotlin">class LiteralString(val str: String): LogicalExpr {
 
   override fun toField(input: LogicalPlan): Field {
@@ -508,7 +508,7 @@ df.show()
 
 }
 </code></pre>
-<p>Here is an example expression for literal longs.</p>
+<p>这是一个用于长整型字面值的表达式示例。</p>
 <pre><code class="language-kotlin">class LiteralLong(val n: Long): LogicalExpr {
 
   override fun toField(input: LogicalPlan): Field {
@@ -521,8 +521,8 @@ df.show()
 
 }
 </code></pre>
-<h2 id="binary-expressions"><a class="header" href="#binary-expressions">Binary Expressions</a></h2>
-<p>Binary expressions are simply expressions that take two inputs. There are three categories of binary expressions that we will implement, and those are comparison expressions, Boolean expressions, and math expressions. Because the string representation is the same for all of these, we can use a common base class that provides the <code>toString</code> method. The variables "l" and "r" refer to the left and right inputs.</p>
+<h3 id="二元表达式"><a class="header" href="#二元表达式">二元表达式</a></h3>
+<p>二元表达式简单来说就是只接受两个输入的表达式。我们将实现三类二元表达式，即比较表达式、布尔表达式和数学表达式。因为所有这些的字符串表示形式都是相同的，我们可以使用一个公共基类来提供<code>toString</code>方法。变量 “l” 和 “r” 分别指左输入和右输入。</p>
 <pre><code class="language-kotlin">abstract class BinaryExpr(
     val name: String,
     val op: String,
@@ -534,7 +534,7 @@ df.show()
   }
 }
 </code></pre>
-<p>Comparison expressions such as <code>=</code> or <code>&lt;</code> compare two values of the same data type and return a Boolean value. We also need to implement Boolean operators <code>AND</code> and <code>OR</code> which also take two arguments and produce a Boolean result, so we can use a common base class for these as well.</p>
+<p>比如 <code>=</code> 或 <code>&lt;</code> 这样的比较表达式会比较两个相同数据类型的值，并返回一个布尔值。我们还需要实现布尔运算符 <code>AND</code> 和 <code>OR</code> ，它们也接受两个参数并产生一个布尔结果，因此我们也可以为这些运算符使用一个公共基类。</p>
 <pre><code class="language-kotlin">abstract class BooleanBinaryExpr(
     name: String,
     op: String,
@@ -547,8 +547,8 @@ df.show()
 
 }
 </code></pre>
-<p>This base class provides a concise way to implement the concrete comparison expressions.</p>
-<h2 id="comparison-expressions"><a class="header" href="#comparison-expressions">Comparison Expressions</a></h2>
+<p>该基类提供了一种简洁的方式来实现具体的比较表达式。</p>
+<h3 id="比较表达式"><a class="header" href="#比较表达式">比较表达式</a></h3>
 <pre><code class="language-kotlin">/** Equality (`=`) comparison */
 class Eq(l: LogicalExpr, r: LogicalExpr)
     : BooleanBinaryExpr("eq", "=", l, r)
@@ -573,8 +573,8 @@ class Lt(l: LogicalExpr, r: LogicalExpr)
 class LtEq(l: LogicalExpr, r: LogicalExpr)
     : BooleanBinaryExpr("lteq", "&lt;=", l, r)
 </code></pre>
-<h2 id="boolean-expressions"><a class="header" href="#boolean-expressions">Boolean Expressions</a></h2>
-<p>The base class also provides a concise way to implement the concrete Boolean logic expressions.</p>
+<h3 id="布尔表达式"><a class="header" href="#布尔表达式">布尔表达式</a></h3>
+<p>该基类还提供了一种简洁的方式来实现具体的布尔逻辑表达式。</p>
 <pre><code class="language-kotlin">/** Logical AND */
 class And(l: LogicalExpr, r: LogicalExpr)
     : BooleanBinaryExpr("and", "AND", l, r)
@@ -583,8 +583,8 @@ class And(l: LogicalExpr, r: LogicalExpr)
 class Or(l: LogicalExpr, r: LogicalExpr)
     : BooleanBinaryExpr("or", "OR", l, r)
 </code></pre>
-<h2 id="math-expressions"><a class="header" href="#math-expressions">Math Expressions</a></h2>
-<p>Math expressions are another specialization of a binary expression. Math expressions typically operate on values of the same data type and produce a result of the same data type.</p>
+<h3 id="数学表达式"><a class="header" href="#数学表达式">数学表达式</a></h3>
+<p>数学表达式是二元表达式的另一种特殊形式。数学表达式通常对相同数据类型的值进行运算并产生相同数据类型的结果。</p>
 <pre><code class="language-kotlin">abstract class MathExpr(
     name: String,
     op: String,
@@ -603,8 +603,8 @@ class Multiply(l: LogicalExpr, r: LogicalExpr) : MathExpr("mult", "*", l, r)
 class Divide(l: LogicalExpr, r: LogicalExpr) : MathExpr("div", "/", l, r)
 class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr("mod", "%", l, r)
 </code></pre>
-<h2 id="aggregate-expressions"><a class="header" href="#aggregate-expressions">Aggregate Expressions</a></h2>
-<p>Aggregate expressions perform an aggregate function such as <code>MIN</code>, <code>MAX</code>, <code>COUNT</code>, <code>SUM</code>, or <code>AVG</code> on an input expression.</p>
+<h3 id="聚合表达式"><a class="header" href="#聚合表达式">聚合表达式</a></h3>
+<p>聚合表达式对输入表达式执行聚合函数，如 <code>MIN</code>、<code>MAX</code>、<code>COUNT</code>、<code>SUM</code> 或者 <code>AVG</code> 等。</p>
 <pre><code class="language-kotlin">abstract class AggregateExpr(
     val name: String,
     val expr: LogicalExpr) : LogicalExpr {
@@ -618,13 +618,13 @@ class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr("mod", "%", l, r)
   }
 }
 </code></pre>
-<p>For aggregate expressions where the aggregated data type is the same as the input type, we can simply extend this base class.</p>
+<p>对于聚合数据类型与输入类型相同的聚合表达式，我们可以简单地扩展这个基类。</p>
 <pre><code class="language-kotlin">class Sum(input: LogicalExpr) : AggregateExpr("SUM", input)
 class Min(input: LogicalExpr) : AggregateExpr("MIN", input)
 class Max(input: LogicalExpr) : AggregateExpr("MAX", input)
 class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
 </code></pre>
-<p>For aggregate expressions where the data type is not dependent on the input type, we need to override the <code>toField</code> method. For example, the "COUNT" aggregate expression always produces an integer regardless of the data type of the values being counted.</p>
+<p>对于数据类型不依赖于输入类型的聚合表达式，我们需要重写 <code>toField</code> 方法。例如，“COUNT” 聚合表达式无论计数值的数据类型为何，总是产生一个整数结果。</p>
 <pre><code class="language-kotlin">class Count(input: LogicalExpr) : AggregateExpr("COUNT", input) {
 
   override fun toField(input: LogicalPlan): Field {
@@ -636,10 +636,10 @@ class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
   }
 }
 </code></pre>
-<h2 id="logical-plans"><a class="header" href="#logical-plans">Logical Plans</a></h2>
-<p>With the logical expressions in place, we can now implement the logical plans for the various transformations that the query engine will support.</p>
-<h2 id="scan"><a class="header" href="#scan">Scan</a></h2>
-<p>The <code>Scan</code> logical plan represents fetching data from a <code>DataSource</code> with an optional projection. <code>Scan</code> is the only logical plan in our query engine that does not have another logical plan as an input. It is a leaf node in the query tree.</p>
+<h2 id="逻辑计划"><a class="header" href="#逻辑计划">逻辑计划</a></h2>
+<p>有了逻辑表达式，逻辑表达式就位后，我们现在可以为查询引擎支持的各种转换实现逻辑计划。</p>
+<h3 id="扫描"><a class="header" href="#扫描">扫描</a></h3>
+<p><code>扫描（Scan）</code> 逻辑计划表示根据可选 <code>映射（projection）</code>从一个 <code>数据源（DataSource）</code> 中获取数据。在我们查询引擎中 <code>扫描（Scan）</code> 逻辑计划是唯一没有其他逻辑计划作为输入的逻辑计划，它是查询树中的叶节点。</p>
 <pre><code class="language-kotlin">class Scan(
     val path: String,
     val dataSource: DataSource,
@@ -674,8 +674,8 @@ class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
 
 }
 </code></pre>
-<h2 id="projection"><a class="header" href="#projection">Projection</a></h2>
-<p>The <code>Projection</code> logical plan applies a projection to its input. A projection is a list of expressions to be evaluated against the input data. Sometimes this is as simple as a list of columns, such as <code>SELECT a, b, c FROM foo</code>, but it could also include any other type of expression that is supported. A more complex example would be <code>SELECT (CAST(a AS float) * 3.141592)) AS my_float FROM foo</code>.</p>
+<h3 id="映射"><a class="header" href="#映射">映射</a></h3>
+<p><code>映射（Projection）</code> 逻辑计划对其输入应用映射。一个映射是对输入数据进行求值的一系列表达式列表。有时候这是一个简单的字段列表, 比如 <code>SELECT a, b, c FROM foo</code>, 但也可能包括任何其他支持的表达式，一个更复杂例子可能是： <code>SELECT (CAST(a AS float) * 3.141592)) AS my_float FROM foo</code>。</p>
 <pre><code class="language-kotlin">class Projection(
     val input: LogicalPlan,
     val expr: List&lt;LogicalExpr&gt;): LogicalPlan {
@@ -695,8 +695,8 @@ class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
   }
 }
 </code></pre>
-<h2 id="selection-also-known-as-filter"><a class="header" href="#selection-also-known-as-filter">Selection (also known as Filter)</a></h2>
-<p>The <code>Selection</code> logical plan applies a filter expression to determine which rows should be selected (included) in its output. This is represented by the <code>WHERE</code> clause in SQL. A simple example would be <code>SELECT * FROM foo WHERE a &gt; 5</code>. The filter expression needs to evaluate to a Boolean result.</p>
+<h3 id="筛选也称为过滤器"><a class="header" href="#筛选也称为过滤器">筛选（也称为过滤器）</a></h3>
+<p><code>筛选（Selection）</code> 逻辑计划通过应用过滤器表达式来确定应在其输出中选择（包含）哪些行。这在 SQL 中用 <code>WHERE</code> 子句表示。一个简单例子可能是：<code>SELECT * FROM foo WHERE a &gt;5</code>，过滤器表达式需要求值出一个布尔结果。</p>
 <pre><code class="language-kotlin">class Selection(
     val input: LogicalPlan,
     val expr: Expr): LogicalPlan {
@@ -715,8 +715,8 @@ class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
   }
 }
 </code></pre>
-<h3 id="aggregate"><a class="header" href="#aggregate">Aggregate</a></h3>
-<p>The <code>Aggregate</code> logical plan is more complex than <code>Projection</code>, <code>Selection</code>, or <code>Scan</code> and calculates aggregates of underlying data such as calculating minimum, maximum, averages, and sums of data. Aggregates are often grouped by other columns (or expressions). A simple example would be <code>SELECT job_title, AVG(salary) FROM employee GROUP BY job_title</code>.</p>
+<h3 id="聚合"><a class="header" href="#聚合">聚合</a></h3>
+<p><code>聚合（Aggregate）</code> 逻辑计划远比 <code>映射（Projection）</code>、<code>筛选（Selection）</code> 或者 <code>扫描（Scan）</code> 复杂，并且能够计算出底层数据如 最小值、最大值、平均值 和 总和 等聚集信息。聚合通常按其他列（或表达式）进行分组。一个简单例子可能是：<code>SELECT job_title, AVG(salary) FROM employee GROUP BY job_title</code>。</p>
 <pre><code class="language-kotlin">class Aggregate(
     val input: LogicalPlan,
     val groupExpr: List&lt;LogicalExpr&gt;,
@@ -736,8 +736,8 @@ class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
   }
 }
 </code></pre>
-<p>Note that in this implementation, the output of the aggregate plan is organized with grouping columns followed by aggregate expressions. It will often be necessary to wrap the aggregate logical plan in a projection so that columns are returned in the order requested in the original query.</p>
-<p><em>This book is also available for purchase in ePub, MOBI, and PDF format from <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a></em></p>
+<p>请注意，在此实现中，聚合计划的输出是通过分组列和聚合表达式来组织的。通常需要将聚合逻辑计划包装在映射中，以便按照原始查询中的请求顺序返回列。</p>
+<p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="building-logical-plans"><a class="header" href="#building-logical-plans">Building Logical Plans</a></h1>
 <p><em>The source code discussed in this chapter can be found in the <code>dataframe</code> module of the<a href="https://github.com/andygrove/how-query-engines-work"> KQuery project</a>.</em></p>
@@ -909,7 +909,7 @@ infix fun LogicalExpr.lteq(rhs: LogicalExpr): LogicalExpr { return LtEq(this, rh
   fun evaluate(input: RecordBatch): ColumnVector
 }
 </code></pre>
-<h2 id="column-expressions-1"><a class="header" href="#column-expressions-1">Column Expressions</a></h2>
+<h2 id="column-expressions"><a class="header" href="#column-expressions">Column Expressions</a></h2>
 <p>The <code>Column</code> expression simply evaluates to a reference to the <code>ColumnVector</code> in the <code>RecordBatch</code> being processed. The logical expression for <code>Column</code> references inputs by name, which is user-friendly for writing queries, but for the physical expression we want to avoid the cost of name lookups every time the expression is evaluated, so it references columns by index instead.</p>
 <pre><code class="language-kotlin">class ColumnExpression(val i: Int) : Expression {
 
@@ -922,7 +922,7 @@ infix fun LogicalExpr.lteq(rhs: LogicalExpr): LogicalExpr { return LtEq(this, rh
   }
 }
 </code></pre>
-<h2 id="literal-expressions-1"><a class="header" href="#literal-expressions-1">Literal Expressions</a></h2>
+<h2 id="literal-expressions"><a class="header" href="#literal-expressions">Literal Expressions</a></h2>
 <p>The physical implementation of a literal expression is simply a literal value wrapped in a class that implements the appropriate trait and provides the same value for every index in a column.</p>
 <pre><code class="language-kotlin">class LiteralValueVector(
     val arrowType: ArrowType,
@@ -971,7 +971,7 @@ class LiteralStringExpression(val value: String) : Expression {
   }
 }
 </code></pre>
-<h2 id="binary-expressions-1"><a class="header" href="#binary-expressions-1">Binary Expressions</a></h2>
+<h2 id="binary-expressions"><a class="header" href="#binary-expressions">Binary Expressions</a></h2>
 <p>For binary expressions, we need to evaluate the left and right input expressions and then evaluate the specific binary operator against those input values, so we can provide a base class to simplify the implementation for each operator.</p>
 <pre><code class="language-kotlin">abstract class BinaryExpression(val l: Expression, val r: Expression) : Expression {
   override fun evaluate(input: RecordBatch): ColumnVector {
@@ -989,7 +989,7 @@ class LiteralStringExpression(val value: String) : Expression {
   abstract fun evaluate(l: ColumnVector, r: ColumnVector) : ColumnVector
 }
 </code></pre>
-<h2 id="comparison-expressions-1"><a class="header" href="#comparison-expressions-1">Comparison Expressions</a></h2>
+<h2 id="comparison-expressions"><a class="header" href="#comparison-expressions">Comparison Expressions</a></h2>
 <p>The comparison expressions simply compare all values in the two input columns and produce a new column (a bit vector) containing the results.</p>
 <p>Here is an example for the equality operator.</p>
 <pre><code class="language-kotlin">class EqExpression(l: Expression,
@@ -1010,7 +1010,7 @@ class LiteralStringExpression(val value: String) : Expression {
   }
 }
 </code></pre>
-<h2 id="math-expressions-1"><a class="header" href="#math-expressions-1">Math Expressions</a></h2>
+<h2 id="math-expressions"><a class="header" href="#math-expressions">Math Expressions</a></h2>
 <p>The implementation for math expressions is very similar to the code for comparison expressions. A base class is used for all math expressions.</p>
 <pre><code class="language-kotlin">abstract class MathExpression(l: Expression,
                               r: Expression): BinaryExpression(l,r) {
@@ -1051,7 +1051,7 @@ class LiteralStringExpression(val value: String) : Expression {
   }
 }
 </code></pre>
-<h2 id="aggregate-expressions-1"><a class="header" href="#aggregate-expressions-1">Aggregate Expressions</a></h2>
+<h2 id="aggregate-expressions"><a class="header" href="#aggregate-expressions">Aggregate Expressions</a></h2>
 <p>The expressions we have looked at so far produce one output column from one or more input columns in each batch. Aggregate expressions are more complex because they aggregate values across multiple batches of data and then produce one final value, so we need to introduce the concept of accumulators, and the physical representation of each aggregate expression needs to know how to produce an appropriate accumulator for the query engine to pass input data to.</p>
 <p>Here are the main interfaces for representing aggregate expressions and accumulators.</p>
 <pre><code class="language-kotlin">interface AggregateExpression {
@@ -1116,7 +1116,7 @@ interface Accumulator {
 </code></pre>
 <h2 id="physical-plans"><a class="header" href="#physical-plans">Physical Plans</a></h2>
 <p>With the physical expressions in place, we can now implement the physical plans for the various transformations that the query engine will support.</p>
-<h2 id="scan-1"><a class="header" href="#scan-1">Scan</a></h2>
+<h2 id="scan"><a class="header" href="#scan">Scan</a></h2>
 <p>The Scan execution plan simply delegates to a data source, passing in a projection to limit the number of columns to load into memory. No additional logic is performed.</p>
 <pre><code class="language-kotlin">class ScanExec(val ds: DataSource, val projection: List&lt;String&gt;) : PhysicalPlan {
 
@@ -1138,7 +1138,7 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h2 id="projection-1"><a class="header" href="#projection-1">Projection</a></h2>
+<h2 id="projection"><a class="header" href="#projection">Projection</a></h2>
 <p>The projection execution plan simply evaluates the projection expressions against the input columns and then produces a record batch containing the derived columns. Note that for the case of projection expressions that reference existing columns by name, the derived column is simply a pointer or reference to the input column, so the underlying data values are not being copied.</p>
 <pre><code class="language-kotlin">class ProjectionExec(
     val input: PhysicalPlan,
@@ -1165,7 +1165,7 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h2 id="selection-also-known-as-filter-1"><a class="header" href="#selection-also-known-as-filter-1">Selection (also known as Filter)</a></h2>
+<h2 id="selection-also-known-as-filter"><a class="header" href="#selection-also-known-as-filter">Selection (also known as Filter)</a></h2>
 <p>The selection execution plan is the first non-trivial plan, since it has conditional logic to determine which rows from the input record batch should be included in the output batches.</p>
 <p>For each input batch, the filter expression is evaluated to return a bit vector containing bits representing the Boolean result of the expression, with one bit for each row. This bit vector is then used to filter the input columns to produce new output columns. This is a simple implementation that could be optimized for cases where the bit vector contains all ones or all zeros to avoid overhead of copying data to new vectors.</p>
 <pre><code class="language-kotlin">class SelectionExec(
@@ -1347,7 +1347,7 @@ interface Accumulator {
 }
 </code></pre>
 <p>The following sections will explain the implementation for each type of expression.</p>
-<h2 id="column-expressions-2"><a class="header" href="#column-expressions-2">Column Expressions</a></h2>
+<h2 id="column-expressions-1"><a class="header" href="#column-expressions-1">Column Expressions</a></h2>
 <p>The logical Column expression references columns by name, but the physical expression uses column indices for improved performance, so the query planner needs to perform the translation from column name to column index and throw an exception if the column name is not valid.</p>
 <p>This simplified example looks for the first matching column name and does not check if there are multiple matching columns, which should be an error condition.</p>
 <pre><code class="language-kotlin">is Column -&gt; {
@@ -1357,13 +1357,13 @@ interface Accumulator {
   }
   ColumnExpression(i)
 </code></pre>
-<h2 id="literal-expressions-2"><a class="header" href="#literal-expressions-2">Literal Expressions</a></h2>
+<h2 id="literal-expressions-1"><a class="header" href="#literal-expressions-1">Literal Expressions</a></h2>
 <p>The physical expressions for literal values are straightforward, and the mapping from logical to physical expression is trivial because we need to copy the literal value over.</p>
 <pre><code class="language-kotlin">is LiteralLong -&gt; LiteralLongExpression(expr.n)
 is LiteralDouble -&gt; LiteralDoubleExpression(expr.n)
 is LiteralString -&gt; LiteralStringExpression(expr.str)
 </code></pre>
-<h2 id="binary-expressions-2"><a class="header" href="#binary-expressions-2">Binary Expressions</a></h2>
+<h2 id="binary-expressions-1"><a class="header" href="#binary-expressions-1">Binary Expressions</a></h2>
 <p>To create a physical expression for a binary expression we first need to create the physical expression for the left and right inputs and then we need to create the specific physical expression.</p>
 <pre><code class="language-kotlin">is BinaryExpr -&gt; {
   val l = createPhysicalExpr(expr.l, input)
@@ -1401,11 +1401,11 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
     ...
 }
 </code></pre>
-<h2 id="scan-2"><a class="header" href="#scan-2">Scan</a></h2>
+<h2 id="scan-1"><a class="header" href="#scan-1">Scan</a></h2>
 <p>Translating the Scan plan simply requires copying the data source reference and the logical plan's projection.</p>
 <pre><code class="language-kotlin">is Scan -&gt; ScanExec(plan.dataSource, plan.projection)
 </code></pre>
-<h2 id="projection-2"><a class="header" href="#projection-2">Projection</a></h2>
+<h2 id="projection-1"><a class="header" href="#projection-1">Projection</a></h2>
 <p>There are two steps to translating a projection. First, we need to create a physical plan for the projection's input, and then we need to convert the projection's logical expressions to physical expressions.</p>
 <pre><code class="language-kotlin">is Projection -&gt; {
   val input = createPhysicalPlan(plan.input)
@@ -1414,7 +1414,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
   ProjectionExec(input, projectionSchema, projectionExpr)
 }
 </code></pre>
-<h2 id="selection-also-known-as-filter-2"><a class="header" href="#selection-also-known-as-filter-2">Selection (also known as Filter)</a></h2>
+<h2 id="selection-also-known-as-filter-1"><a class="header" href="#selection-also-known-as-filter-1">Selection (also known as Filter)</a></h2>
 <p>The query planning step for <code>Selection</code> is very similar to <code>Projection</code>.</p>
 <pre><code class="language-kotlin">is Selection -&gt; {
   val input = createPhysicalPlan(plan.input)
@@ -1422,7 +1422,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
   SelectionExec(input, filterExpr)
 }
 </code></pre>
-<h2 id="aggregate-1"><a class="header" href="#aggregate-1">Aggregate</a></h2>
+<h2 id="aggregate"><a class="header" href="#aggregate">Aggregate</a></h2>
 <p>The query planning step for aggregate queries involves evaluating the expressions that define the optional grouping keys and evaluating the expressions that are the inputs to the aggregate functions, and then creating the physical aggregate expressions.</p>
 <pre><code class="language-kotlin">is Aggregate -&gt; {
   val input = createPhysicalPlan(plan.input)
