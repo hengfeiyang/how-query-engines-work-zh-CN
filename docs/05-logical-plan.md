@@ -1,8 +1,8 @@
-# Logical Plans & Expressions
+# 逻辑计划和表达式
 
-_The source code discussed in this chapter can be found in the `logical-plan` module of the[ KQuery project](https://github.com/andygrove/how-query-engines-work)._
+_本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `logical-plan` 模块中找到。_
 
-A logical plan represents a relation (a set of tuples) with a known schema. Each logical plan can have zero or more logical plans as inputs. It is convenient for a logical plan to expose its child plans so that a visitor pattern can be used to walk through the plan.
+逻辑计划表示具有已知结构的关系（一组元组）。每个逻辑计划可以有零个或多个逻辑计划作为输入。逻辑计划可以很方便地公开其子计划，以便可以使用访问者模式来遍历该计划。
 
 ```kotlin
 interface LogicalPlan {
@@ -11,11 +11,11 @@ interface LogicalPlan {
 }
 ```
 
-## Printing Logical Plans
+## 打印逻辑计划
 
-It is important to be able to print logical plans in human-readable form to help with debugging. Logical plans are typically printed as a hierarchical structure with child nodes indented.
+能够以人类可读形式打印逻辑计划对于帮助调试非常重要。逻辑计划通常打印为带有缩进子节点的分层结构。
 
-We can implement a simple recursive helper function to format a logical plan.
+我们可以实现一个简单的递归辅助函数来格式化逻辑计划。
 
 ```kotlin
 fun format(plan: LogicalPlan, indent: Int = 0): String {
@@ -27,7 +27,7 @@ fun format(plan: LogicalPlan, indent: Int = 0): String {
 }
 ```
 
-Here is an example of a logical plan formatted using this method.
+以下是使用此方法格式化逻辑计划的一个例子。
 
 ```
 Projection: #id, #first_name, #last_name, #state, #salary
@@ -35,38 +35,38 @@ Projection: #id, #first_name, #last_name, #state, #salary
     Scan: employee.csv; projection=None
 ```
 
-## Serialization
+## 序列化
 
-It is sometimes desirable to be able to serialize query plans so that they can easily be transferred to another process. It is good practice to add serialization early on as a precaution against accidentally referencing data structures that cannot be serialized (such as file handles or database connections).
+有时希望能够序列化查询计划，以便可以轻松地将它们转移到另一个进程。最好尽早添加序列化，以防止意外引用无法序列化的数据结构（如文件句柄或数据库连接）。
 
-One approach would be to use the implementation languages' default mechanism for serializing data structures to/from a format such as JSON. In Java, the Jackson library could be used. Kotlin has the `kotlinx.serialization` library, and Rust has a serde crate, for example.
+一种方法是使用实​​现语言的默认机制将数据结构序列化/反序列化为 JSON 等格式。在 Java 中可以使用 Jackson 库，Kotlin 有 `kotlinx.serialization` 库，Rust 则有 serde crate等。
 
-Another option would be to define a language-agnostic serialization format using Avro, Thrift, or Protocol Buffers and then write code to translate between this format and the language-specific implementation.
+另一种选择可能是定义一种与语言无关的序列化格式，如 Avro、Thrift 或 Protocol Buffers，然后编写代码在此格式和特定于语言实现之间进行转换。
 
-Since publishing the first edition of this book, a new standard named ["substrait"](https://substrait.io/) has emerged, with the goal of providing cross-language serialization for relational algebra. I am excited about this project and predict that it will become the de-facto standard for representing query plans and open up many integration possibilities. For example, it would be possible to use a mature Java-based query planner such as Apache Calcite, serialize the plan in Substrait format, and then execute the plan in a query engine implemented in a lower-level language, such as C++ or Rust. For more information, visit https://substrait.io/.
+自本书第一版发来以来，出现了一个名为 [“substrait”](https://substrait.io/) 的新标准，其目标是为关系代数提供跨语言序列化。我对这个项目感到很兴奋，并预测它将成为表示查询计划的事实上的标准，并开辟许多集成的可能性。例如，可以使用成熟的基于 Java 的查询计划程序（例如 Apache Calcite），以 Substrait 格式序列化计划，然后在以较低级别语言（例如 C++ 或 Rust）实现的查询引擎中执行计划。欲了解更多信息，请访问 https://substrait.io/。
 
-## Logical Expressions
+## 逻辑表达式
 
-One of the fundamental building blocks of a query plan is the concept of an expression that can be evaluated against data at runtime.
+表达式这一概念是查询计划的基本构建块之一，其可以在运行时对数据进行求值。
 
-Here are some examples of expressions that are typically supported in query engines.
+以下是查询引擎中通常支持的一些表达式示例。
 
-| Expression            | Examples |
-|-----------------------|----------|
-| Literal Value         | "hello", 12.34 |
-| Column Reference      | user_id, first_name, last_name |
-| Math Expression       | salary * state_tax |
-| Comparison Expression | x >= y |
-| Boolean Expression    | birthday = today() AND age >= 21 |
+| 表达式                 | 示例                                |
+|-----------------------|------------------------------------|
+| Literal Value         | "hello", 12.34                     |
+| Column Reference      | user_id, first_name, last_name     |
+| Math Expression       | salary * state_tax                 |
+| Comparison Expression | x >= y                             |
+| Boolean Expression    | birthday = today() AND age >= 21   |
 | Aggregate Expression  | MIN(salary), MAX(salary), SUM(salary), AVG(salary), COUNT(*) |
 | Scalar Function       | CONCAT(first_name, " ", last_name) |
-| Aliased Expression    | salary * 0.02 AS pay_increase |
+| Aliased Expression    | salary * 0.02 AS pay_increase      |
 
-Of course, all of these expressions can be combined to form deeply nested expression trees. Expression evaluation is a textbook case of recursive programming.
+当然，所有这些表达式都可以组合形成深层嵌套的表达式树。表达式求值是递归编程的典型案例。
 
-When we are planning queries, we will need to know some basic metadata about the output of an expression. Specifically, we need to have a name for the expression so that other expressions can reference it and we need to know the data type of the values that the expression will produce when evaluated so that we can validate that the query plan is valid. For example, if we have an expression `a + b` then it can only be valid if both `a` and `b` are numeric types.
+在规划查询时，我们需要了解有关表达式输出的一些基本元数据。具体来说，我们需要为表达式指定一个名称，以便其他表达式可以引用它，并且我们需要知道表达式求值时将生成的值的数据类型，以便我们可以验证查询计划是否有效。例如，如果我们有一个表达式 `a + b` ，那么只有当 `a` 和 `b` 都是数值类型时才有效。
 
-Also note that the data type of an expression can be dependent on the input data. For example, a column reference will have the data type of the column it is referencing, but a comparison expression always returns a Boolean value.
+还需注意，表达式的数据类型可能取决于输入数据。例如，列引用将具有它所引用的列的数据类型，但比较表达式始终返回布尔值。
 
 ```kotlin
 interface LogicalExpr {
@@ -74,9 +74,9 @@ interface LogicalExpr {
 }
 ```
 
-## Column Expressions
+### 列式表达式
 
-The `Column` expression simply represents a reference to a named column. The metadata for this expression is derived by finding the named column in the input and returning that column's metadata. Note that the term "column" here refers to a column produced by the input logical plan and could represent a column in a data source, or it could represent the result of an expression being evaluated against other inputs.
+`Column` 表达式仅代表对一个命名列的引用。该表达式的元数据是通过在输入中查找指定列并返回该列的元数据而派生的。请注意，此处的术语 `Column` 指的是由输入逻辑计划生成的列，并且可以表示数据源中的列，或者它可以表示针对其他输入求值的表达式的结果。
 
 ```kotlin
 class Column(val name: String): LogicalExpr {
@@ -93,11 +93,11 @@ class Column(val name: String): LogicalExpr {
 }
 ```
 
-## Literal Expressions
+### 字面值表达式
 
-We need the ability to represent literal values as expressions so that we can write expressions such as `salary * 0.05`.
+我们需要能够将字面值表示为表达式的能力，以便我们可以编写像 `salary * 0.05` 这样的表达式。
 
-Here is an example expression for literal strings.
+这是一个用于字符串字面值的表达式示例。
 
 ```kotlin
 class LiteralString(val str: String): LogicalExpr {
@@ -113,7 +113,7 @@ class LiteralString(val str: String): LogicalExpr {
 }
 ```
 
-Here is an example expression for literal longs.
+这是一个用于长整型字面值的表达式示例。
 
 ```kotlin
 class LiteralLong(val n: Long): LogicalExpr {
@@ -129,9 +129,9 @@ class LiteralLong(val n: Long): LogicalExpr {
 }
 ```
 
-## Binary Expressions
+### 二元表达式
 
-Binary expressions are simply expressions that take two inputs. There are three categories of binary expressions that we will implement, and those are comparison expressions, Boolean expressions, and math expressions. Because the string representation is the same for all of these, we can use a common base class that provides the `toString` method. The variables "l" and "r" refer to the left and right inputs.
+二元表达式简单来说就是只接受两个输入的表达式。我们将实现三类二元表达式，即比较表达式、布尔表达式和数学表达式。因为所有这些的字符串表示形式都是相同的，我们可以使用一个公共基类来提供`toString`方法。变量 “l” 和 “r” 分别指左输入和右输入。
 
 ```kotlin
 abstract class BinaryExpr(
@@ -146,7 +146,7 @@ abstract class BinaryExpr(
 }
 ```
 
-Comparison expressions such as `=` or `<` compare two values of the same data type and return a Boolean value. We also need to implement Boolean operators `AND` and `OR` which also take two arguments and produce a Boolean result, so we can use a common base class for these as well.
+比如 `=` 或 `<` 这样的比较表达式会比较两个相同数据类型的值，并返回一个布尔值。我们还需要实现布尔运算符 `AND` 和 `OR` ，它们也接受两个参数并产生一个布尔结果，因此我们也可以为这些运算符使用一个公共基类。
 
 ```kotlin
 abstract class BooleanBinaryExpr(
@@ -162,9 +162,9 @@ abstract class BooleanBinaryExpr(
 }
 ```
 
-This base class provides a concise way to implement the concrete comparison expressions.
+该基类提供了一种简洁的方式来实现具体的比较表达式。
 
-## Comparison Expressions
+### 比较表达式
 
 ```kotlin
 /** Equality (`=`) comparison */
@@ -192,9 +192,9 @@ class LtEq(l: LogicalExpr, r: LogicalExpr)
     : BooleanBinaryExpr("lteq", "<=", l, r)
 ```
 
-## Boolean Expressions
+### 布尔表达式
 
-The base class also provides a concise way to implement the concrete Boolean logic expressions.
+该基类还提供了一种简洁的方式来实现具体的布尔逻辑表达式。
 
 ```kotlin
 /** Logical AND */
@@ -206,9 +206,9 @@ class Or(l: LogicalExpr, r: LogicalExpr)
     : BooleanBinaryExpr("or", "OR", l, r)
 ```
 
-## Math Expressions
+### 数学表达式
 
-Math expressions are another specialization of a binary expression. Math expressions typically operate on values of the same data type and produce a result of the same data type.
+数学表达式是二元表达式的另一种特殊形式。数学表达式通常对相同数据类型的值进行运算并产生相同数据类型的结果。
 
 ```kotlin
 abstract class MathExpr(
@@ -230,9 +230,9 @@ class Divide(l: LogicalExpr, r: LogicalExpr) : MathExpr("div", "/", l, r)
 class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr("mod", "%", l, r)
 ```
 
-## Aggregate Expressions
+### 聚合表达式
 
-Aggregate expressions perform an aggregate function such as `MIN`, `MAX`, `COUNT`, `SUM`, or `AVG` on an input expression.
+聚合表达式对输入表达式执行聚合函数，如 `MIN`、`MAX`、`COUNT`、`SUM` 或者 `AVG` 等。
 
 ```kotlin
 abstract class AggregateExpr(
@@ -249,7 +249,7 @@ abstract class AggregateExpr(
 }
 ```
 
-For aggregate expressions where the aggregated data type is the same as the input type, we can simply extend this base class.
+对于聚合数据类型与输入类型相同的聚合表达式，我们可以简单地扩展这个基类。
 
 ```kotlin
 class Sum(input: LogicalExpr) : AggregateExpr("SUM", input)
@@ -258,7 +258,7 @@ class Max(input: LogicalExpr) : AggregateExpr("MAX", input)
 class Avg(input: LogicalExpr) : AggregateExpr("AVG", input)
 ```
 
-For aggregate expressions where the data type is not dependent on the input type, we need to override the `toField` method. For example, the "COUNT" aggregate expression always produces an integer regardless of the data type of the values being counted.
+对于数据类型不依赖于输入类型的聚合表达式，我们需要重写 `toField` 方法。例如，“COUNT” 聚合表达式无论计数值的数据类型为何，总是产生一个整数结果。
 
 ```kotlin
 class Count(input: LogicalExpr) : AggregateExpr("COUNT", input) {
@@ -273,13 +273,13 @@ class Count(input: LogicalExpr) : AggregateExpr("COUNT", input) {
 }
 ```
 
-## Logical Plans
+## 逻辑计划
 
-With the logical expressions in place, we can now implement the logical plans for the various transformations that the query engine will support.
+有了逻辑表达式，逻辑表达式就位后，我们现在可以为查询引擎支持的各种转换实现逻辑计划。
 
-## Scan
+### 扫描
 
-The `Scan` logical plan represents fetching data from a `DataSource` with an optional projection. `Scan` is the only logical plan in our query engine that does not have another logical plan as an input. It is a leaf node in the query tree.
+`扫描（Scan）` 逻辑计划表示根据可选 `映射（projection）`从一个 `数据源（DataSource）` 中获取数据。在我们查询引擎中 `扫描（Scan）` 逻辑计划是唯一没有其他逻辑计划作为输入的逻辑计划，它是查询树中的叶节点。
 
 ```kotlin
 class Scan(
@@ -317,9 +317,9 @@ class Scan(
 }
 ```
 
-## Projection
+### 映射
 
-The `Projection` logical plan applies a projection to its input. A projection is a list of expressions to be evaluated against the input data. Sometimes this is as simple as a list of columns, such as `SELECT a, b, c FROM foo`, but it could also include any other type of expression that is supported. A more complex example would be `SELECT (CAST(a AS float) * 3.141592)) AS my_float FROM foo`.
+`映射（Projection）` 逻辑计划对其输入应用映射。一个映射是对输入数据进行求值的一系列表达式列表。有时候这是一个简单的字段列表, 比如 `SELECT a, b, c FROM foo`, 但也可能包括任何其他支持的表达式，一个更复杂例子可能是： `SELECT (CAST(a AS float) * 3.141592)) AS my_float FROM foo`。
 
 ```kotlin
 class Projection(
@@ -342,9 +342,9 @@ class Projection(
 }
 ```
 
-## Selection (also known as Filter)
+### 筛选（也称为过滤器）
 
-The `Selection` logical plan applies a filter expression to determine which rows should be selected (included) in its output. This is represented by the `WHERE` clause in SQL. A simple example would be `SELECT * FROM foo WHERE a > 5`. The filter expression needs to evaluate to a Boolean result.
+`筛选（Selection）` 逻辑计划通过应用过滤器表达式来确定应在其输出中选择（包含）哪些行。这在 SQL 中用 `WHERE` 子句表示。一个简单例子可能是：`SELECT * FROM foo WHERE a >5`，过滤器表达式需要求值出一个布尔结果。
 
 ```kotlin
 class Selection(
@@ -366,9 +366,9 @@ class Selection(
 }
 ```
 
-### Aggregate
+### 聚合
 
-The `Aggregate` logical plan is more complex than `Projection`, `Selection`, or `Scan` and calculates aggregates of underlying data such as calculating minimum, maximum, averages, and sums of data. Aggregates are often grouped by other columns (or expressions). A simple example would be `SELECT job_title, AVG(salary) FROM employee GROUP BY job_title`.
+`聚合（Aggregate）` 逻辑计划远比 `映射（Projection）`、`筛选（Selection）` 或者 `扫描（Scan）` 复杂，并且能够计算出底层数据如 最小值、最大值、平均值 和 总和 等聚集信息。聚合通常按其他列（或表达式）进行分组。一个简单例子可能是：`SELECT job_title, AVG(salary) FROM employee GROUP BY job_title`。
 
 ```kotlin
 class Aggregate(
@@ -391,8 +391,8 @@ class Aggregate(
 }
 ```
 
-Note that in this implementation, the output of the aggregate plan is organized with grouping columns followed by aggregate expressions. It will often be necessary to wrap the aggregate logical plan in a projection so that columns are returned in the order requested in the original query.
+请注意，在此实现中，聚合计划的输出是通过分组列和聚合表达式来组织的。通常需要将聚合逻辑计划包装在映射中，以便按照原始查询中的请求顺序返回列。
 
-*This book is also available for purchase in ePub, MOBI, and PDF format from [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work)*
+*这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
 **Copyright © 2020-2023 Andy Grove. All rights reserved.**
