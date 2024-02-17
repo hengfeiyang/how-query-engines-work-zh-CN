@@ -1348,8 +1348,8 @@ interface Accumulator {
 </code></pre>
 <p>以下部分将解释每种类型表达式的实现。</p>
 <h3 id="列表达式column-expressions-1"><a class="header" href="#列表达式column-expressions-1">列表达式（Column Expressions）</a></h3>
-<p>The logical Column expression references columns by name, but the physical expression uses column indices for improved performance, so the query planner needs to perform the translation from column name to column index and throw an exception if the column name is not valid.</p>
-<p>This simplified example looks for the first matching column name and does not check if there are multiple matching columns, which should be an error condition.</p>
+<p>逻辑列表达式按名称引用列，但物理表达式使用列索引来提高性能，因此查询规划器需要执行从列名到列索引的转换，并在列名无效时抛出异常。</p>
+<p>这个简化的示例查找第一个匹配的列名称，并没有检查是否有多个匹配的列，这应该是一个错误条件。</p>
 <pre><code class="language-kotlin">is Column -&gt; {
   val i = input.schema().fields.indexOfFirst { it.name == expr.name }
   if (i == -1) {
@@ -1358,13 +1358,13 @@ interface Accumulator {
   ColumnExpression(i)
 </code></pre>
 <h3 id="字面量表达式literal-expressions-2"><a class="header" href="#字面量表达式literal-expressions-2">字面量表达式（Literal Expressions）</a></h3>
-<p>The physical expressions for literal values are straightforward, and the mapping from logical to physical expression is trivial because we need to copy the literal value over.</p>
+<p>字面量的物理表达式很简单，从逻辑表达式到物理表达式的映射很简单，因为我们需要复制字面值。</p>
 <pre><code class="language-kotlin">is LiteralLong -&gt; LiteralLongExpression(expr.n)
 is LiteralDouble -&gt; LiteralDoubleExpression(expr.n)
 is LiteralString -&gt; LiteralStringExpression(expr.str)
 </code></pre>
 <h3 id="二元表达式binary-expressions-2"><a class="header" href="#二元表达式binary-expressions-2">二元表达式（Binary Expressions）</a></h3>
-<p>To create a physical expression for a binary expression we first need to create the physical expression for the left and right inputs and then we need to create the specific physical expression.</p>
+<p>要为二元表达式创建物理表达式，我们首先需要为左右输入创建物理表达式，然后需要创建特定的物理表达式。</p>
 <pre><code class="language-kotlin">is BinaryExpr -&gt; {
   val l = createPhysicalExpr(expr.l, input)
   val r = createPhysicalExpr(expr.r, input)
@@ -1393,7 +1393,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
 }
 </code></pre>
 <h2 id="转换逻辑计划"><a class="header" href="#转换逻辑计划">转换逻辑计划</a></h2>
-<p>We need to implement a recursive function to walk the logical plan tree and translate it into a physical plan, using the same pattern described earlier for translating expressions.</p>
+<p>我们需要实现一个递归函数来遍历逻辑计划树并将其转换为物理计划，使用前面描述的转换表达式的相同模式。</p>
 <pre><code class="language-kotlin">fun createPhysicalPlan(plan: LogicalPlan) : PhysicalPlan {
   return when (plan) {
     is Scan -&gt; ...
@@ -1402,11 +1402,11 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
 }
 </code></pre>
 <h3 id="扫描scan-2"><a class="header" href="#扫描scan-2">扫描（Scan）</a></h3>
-<p>Translating the Scan plan simply requires copying the data source reference and the logical plan's projection.</p>
+<p>转换扫描计划只需复制数据源引用和逻辑计划的映射。</p>
 <pre><code class="language-kotlin">is Scan -&gt; ScanExec(plan.dataSource, plan.projection)
 </code></pre>
 <h3 id="映射projection-2"><a class="header" href="#映射projection-2">映射（Projection）</a></h3>
-<p>There are two steps to translating a projection. First, we need to create a physical plan for the projection's input, and then we need to convert the projection's logical expressions to physical expressions.</p>
+<p>转换映射有两个步骤。首先，我们需要为映射的输入创建一个物理计划，然后我们需要将映射的逻辑表达式转换为物理表达式。</p>
 <pre><code class="language-kotlin">is Projection -&gt; {
   val input = createPhysicalPlan(plan.input)
   val projectionExpr = plan.expr.map { createPhysicalExpr(it, plan.input) }
@@ -1415,7 +1415,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
 }
 </code></pre>
 <h3 id="筛选也称为过滤器selection-also-known-as-filter-2"><a class="header" href="#筛选也称为过滤器selection-also-known-as-filter-2">筛选（也称为过滤器）（Selection (also known as Filter)）</a></h3>
-<p>The query planning step for <code>Selection</code> is very similar to <code>Projection</code>.</p>
+<p><code>Selection</code> 的查询规划步骤与 <code>Projection</code> 非常相似。</p>
 <pre><code class="language-kotlin">is Selection -&gt; {
   val input = createPhysicalPlan(plan.input)
   val filterExpr = createPhysicalExpr(plan.expr, plan.input)
@@ -1423,7 +1423,7 @@ is LiteralString -&gt; LiteralStringExpression(expr.str)
 }
 </code></pre>
 <h3 id="聚合aggregate-1"><a class="header" href="#聚合aggregate-1">聚合（Aggregate）</a></h3>
-<p>The query planning step for aggregate queries involves evaluating the expressions that define the optional grouping keys and evaluating the expressions that are the inputs to the aggregate functions, and then creating the physical aggregate expressions.</p>
+<p>聚合查询的查询规划步骤涉及计算定义可选 分组键（grouping keys）的表达式和计算作为聚合函数的输入的表达式，然后创建物理聚合表达式。</p>
 <pre><code class="language-kotlin">is Aggregate -&gt; {
   val input = createPhysicalPlan(plan.input)
   val groupExpr = plan.groupExpr.map { createPhysicalExpr(it, plan.input) }
