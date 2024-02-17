@@ -2,13 +2,13 @@
 
 _本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `query-planner` 模块中找到。_
 
-We have defined logical and physical query plans, and now we need a query planner that can translate the logical plan into the physical plan.
+我们已经定义了逻辑和物理查询计划，现在我们需要一个可以将逻辑计划转换为物理计划的查询计划器。
 
-The query planner may choose different physical plans based on configuration options or based on the target platform's hardware capabilities. For example, queries could be executed on CPU or GPU, on a single node, or distributed in a cluster.
+查询规划器可以基于配置选项或基于目标平台的硬件能力来选择不同的物理计划。例如，查询可以在 CPU 或 GPU 上、单个节点上或者分布在集群中执行。
 
-## Translating Logical Expressions
+## 转换逻辑表达式
 
-The first step is to define a method to translate logical expressions to physical expressions recursively. The following code sample demonstrates an implementation based on a switch statement and shows how translating a binary expression, which has two input expressions, causes the code to recurse back into the same method to translate those inputs. This approach walks the entire logical expression tree and creates a corresponding physical expression tree.
+第一步是定义一种方法，以递归方式将逻辑表达式转换为物理表达式。以下代码示例演示了基于 switch 语句的实现，并展示了如何把具有两个输入表达式的二元表达式使用递归的方法来转换这些输入。这种方法遍历整个逻辑表达式树并创建相应的物理表达式树。
 
 ```kotlin
 fun createPhysicalExpr(expr: LogicalExpr,
@@ -24,9 +24,10 @@ fun createPhysicalExpr(expr: LogicalExpr,
 }
 ```
 
-The following sections will explain the implementation for each type of expression.
+以下部分将解释每种类型表达式的实现。
 
-## Column Expressions
+### 列表达式（Column Expressions）
+
 
 The logical Column expression references columns by name, but the physical expression uses column indices for improved performance, so the query planner needs to perform the translation from column name to column index and throw an exception if the column name is not valid.
 
@@ -41,7 +42,7 @@ is Column -> {
   ColumnExpression(i)
 ```
 
-## Literal Expressions
+### 字面量表达式（Literal Expressions）
 
 The physical expressions for literal values are straightforward, and the mapping from logical to physical expression is trivial because we need to copy the literal value over.
 
@@ -51,7 +52,7 @@ is LiteralDouble -> LiteralDoubleExpression(expr.n)
 is LiteralString -> LiteralStringExpression(expr.str)
 ```
 
-## Binary Expressions
+### 二元表达式（Binary Expressions）
 
 To create a physical expression for a binary expression we first need to create the physical expression for the left and right inputs and then we need to create the specific physical expression.
 
@@ -84,7 +85,7 @@ is BinaryExpr -> {
 }
 ```
 
-## Translating Logical Plans
+## 转换逻辑计划
 
 We need to implement a recursive function to walk the logical plan tree and translate it into a physical plan, using the same pattern described earlier for translating expressions.
 
@@ -97,7 +98,7 @@ fun createPhysicalPlan(plan: LogicalPlan) : PhysicalPlan {
 }
 ```
 
-## Scan
+### 扫描（Scan）
 
 Translating the Scan plan simply requires copying the data source reference and the logical plan's projection.
 
@@ -105,7 +106,7 @@ Translating the Scan plan simply requires copying the data source reference and 
 is Scan -> ScanExec(plan.dataSource, plan.projection)
 ```
 
-## Projection
+### 映射（Projection）
 
 There are two steps to translating a projection. First, we need to create a physical plan for the projection's input, and then we need to convert the projection's logical expressions to physical expressions.
 
@@ -118,7 +119,7 @@ is Projection -> {
 }
 ```
 
-## Selection (also known as Filter)
+### 筛选（也称为过滤器）（Selection (also known as Filter)）
 
 The query planning step for `Selection` is very similar to `Projection`.
 
@@ -130,7 +131,7 @@ is Selection -> {
 }
 ```
 
-## Aggregate
+### 聚合（Aggregate）
 
 The query planning step for aggregate queries involves evaluating the expressions that define the optional grouping keys and evaluating the expressions that are the inputs to the aggregate functions, and then creating the physical aggregate expressions.
 

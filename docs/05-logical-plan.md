@@ -45,7 +45,7 @@ Projection: #id, #first_name, #last_name, #state, #salary
 
 自本书第一版发来以来，出现了一个名为 [“substrait”](https://substrait.io/) 的新标准，其目标是为关系代数提供跨语言序列化。我对这个项目感到很兴奋，并预测它将成为表示查询计划的事实上的标准，并开辟许多集成的可能性。例如，可以使用成熟的基于 Java 的查询计划程序（例如 Apache Calcite），以 Substrait 格式序列化计划，然后在以较低级别语言（例如 C++ 或 Rust）实现的查询引擎中执行计划。欲了解更多信息，请访问 https://substrait.io/。
 
-## 逻辑表达式
+## 逻辑表达式（Logical Expressions）
 
 表达式这一概念是查询计划的基本构建块之一，其可以在运行时对数据进行求值。
 
@@ -74,7 +74,7 @@ interface LogicalExpr {
 }
 ```
 
-### 列式表达式
+### 列式表达式（Column Expressions）
 
 `Column` 表达式仅代表对一个命名列的引用。该表达式的元数据是通过在输入中查找指定列并返回该列的元数据而派生的。请注意，此处的术语 `Column` 指的是由输入逻辑计划生成的列，并且可以表示数据源中的列，或者它可以表示针对其他输入求值的表达式的结果。
 
@@ -93,7 +93,7 @@ class Column(val name: String): LogicalExpr {
 }
 ```
 
-### 字面量表达式
+### 字面量表达式（Literal Expressions）
 
 我们需要能够将字面量表示为表达式的能力，以便我们可以编写像 `salary * 0.05` 这样的表达式。
 
@@ -129,7 +129,7 @@ class LiteralLong(val n: Long): LogicalExpr {
 }
 ```
 
-### 二元表达式
+### 二元表达式（Binary Expressions）
 
 二元表达式简单来说就是只接受两个输入的表达式。我们将实现三类二元表达式，即比较表达式、布尔表达式和数学表达式。因为所有这些的字符串表示形式都是相同的，我们可以使用一个公共基类来提供`toString`方法。变量 “l” 和 “r” 分别指左输入和右输入。
 
@@ -164,7 +164,7 @@ abstract class BooleanBinaryExpr(
 
 该基类提供了一种简洁的方式来实现具体的比较表达式。
 
-### 比较表达式
+### 比较表达式（Comparison Expressions）
 
 ```kotlin
 /** Equality (`=`) comparison */
@@ -192,7 +192,7 @@ class LtEq(l: LogicalExpr, r: LogicalExpr)
     : BooleanBinaryExpr("lteq", "<=", l, r)
 ```
 
-### 布尔表达式
+### 布尔表达式（Boolean Expressions）
 
 该基类还提供了一种简洁的方式来实现具体的布尔逻辑表达式。
 
@@ -206,7 +206,7 @@ class Or(l: LogicalExpr, r: LogicalExpr)
     : BooleanBinaryExpr("or", "OR", l, r)
 ```
 
-### 数学表达式
+### 数学表达式（Math Expressions）
 
 数学表达式是二元表达式的另一种特殊形式。数学表达式通常对相同数据类型的值进行运算并产生相同数据类型的结果。
 
@@ -230,7 +230,7 @@ class Divide(l: LogicalExpr, r: LogicalExpr) : MathExpr("div", "/", l, r)
 class Modulus(l: LogicalExpr, r: LogicalExpr) : MathExpr("mod", "%", l, r)
 ```
 
-### 聚合表达式
+### 聚合表达式（Aggregate Expressions）
 
 聚合表达式对输入表达式执行聚合函数，如 `MIN`、`MAX`、`COUNT`、`SUM` 或者 `AVG` 等。
 
@@ -273,11 +273,11 @@ class Count(input: LogicalExpr) : AggregateExpr("COUNT", input) {
 }
 ```
 
-## 逻辑计划
+## 逻辑计划（Logical Plans）
 
 有了逻辑表达式，逻辑表达式就位后，我们现在可以为查询引擎支持的各种转换实现逻辑计划。
 
-### 扫描
+### 扫描（Scan）
 
 `扫描（Scan）` 逻辑计划表示根据可选 `映射（projection）`从一个 `数据源（DataSource）` 中获取数据。在我们查询引擎中 `扫描（Scan）` 逻辑计划是唯一没有其他逻辑计划作为输入的逻辑计划，它是查询树中的叶节点。
 
@@ -317,7 +317,7 @@ class Scan(
 }
 ```
 
-### 映射
+### 映射（Projection）
 
 `映射（Projection）` 逻辑计划对其输入应用映射。一个映射是对输入数据进行求值的一系列表达式列表。有时候这是一个简单的字段列表, 比如 `SELECT a, b, c FROM foo`, 但也可能包括任何其他支持的表达式，一个更复杂例子可能是： `SELECT (CAST(a AS float) * 3.141592)) AS my_float FROM foo`。
 
@@ -342,7 +342,7 @@ class Projection(
 }
 ```
 
-### 筛选（也称为过滤器）
+### 筛选（也称为过滤器）（Selection (also known as Filter)）
 
 `筛选（Selection）` 逻辑计划通过应用过滤器表达式来确定应在其输出中选择（包含）哪些行。这在 SQL 中用 `WHERE` 子句表示。一个简单例子可能是：`SELECT * FROM foo WHERE a > 5`，过滤器表达式需要求值出一个布尔结果。
 
@@ -366,7 +366,7 @@ class Selection(
 }
 ```
 
-### 聚合
+### 聚合（Aggregate）
 
 `聚合（Aggregate）` 逻辑计划远比 `映射（Projection）`、`筛选（Selection）` 或者 `扫描（Scan）` 复杂，并且能够计算出底层数据如 最小值、最大值、平均值 和 总和 等聚集信息。聚合通常按其他列（或表达式）进行分组。一个简单例子可能是：`SELECT job_title, AVG(salary) FROM employee GROUP BY job_title`。
 
