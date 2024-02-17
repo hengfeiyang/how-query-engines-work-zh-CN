@@ -60,7 +60,7 @@ interface ColumnVector {
 }
 ```
 
-这种抽象也使得标量值的实现成为可能，从而避免了用字面值为列中每个索引重复创建和填入 `FieldVector`。
+这种抽象也使得标量值的实现成为可能，从而避免了用字面量为列中每个索引重复创建和填入 `FieldVector`。
 
 ```kotlin
 class LiteralValueVector(

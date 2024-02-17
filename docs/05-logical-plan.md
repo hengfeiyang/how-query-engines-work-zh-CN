@@ -93,11 +93,11 @@ class Column(val name: String): LogicalExpr {
 }
 ```
 
-### 字面值表达式
+### 字面量表达式
 
-我们需要能够将字面值表示为表达式的能力，以便我们可以编写像 `salary * 0.05` 这样的表达式。
+我们需要能够将字面量表示为表达式的能力，以便我们可以编写像 `salary * 0.05` 这样的表达式。
 
-这是一个用于字符串字面值的表达式示例。
+这是一个用于字符串字面量的表达式示例。
 
 ```kotlin
 class LiteralString(val str: String): LogicalExpr {
@@ -344,7 +344,7 @@ class Projection(
 
 ### 筛选（也称为过滤器）
 
-`筛选（Selection）` 逻辑计划通过应用过滤器表达式来确定应在其输出中选择（包含）哪些行。这在 SQL 中用 `WHERE` 子句表示。一个简单例子可能是：`SELECT * FROM foo WHERE a >5`，过滤器表达式需要求值出一个布尔结果。
+`筛选（Selection）` 逻辑计划通过应用过滤器表达式来确定应在其输出中选择（包含）哪些行。这在 SQL 中用 `WHERE` 子句表示。一个简单例子可能是：`SELECT * FROM foo WHERE a > 5`，过滤器表达式需要求值出一个布尔结果。
 
 ```kotlin
 class Selection(
