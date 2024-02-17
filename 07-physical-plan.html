@@ -181,29 +181,29 @@
                     <main>
                         <h1 id="物理计划和表达式"><a class="header" href="#物理计划和表达式">物理计划和表达式</a></h1>
 <p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>physical-plan</code> 模块中找到。</em></p>
-<p>The logical plans defined in chapter five specify what to do but not how to do it, and it is good practice to have separate logical and physical plans, although it is possible to combine them to reduce complexity.</p>
-<p>One reason to keep logical and physical plans separate is that sometimes there can be multiple ways to execute a particular operation, meaning that there is a one-to-many relationship between logical plans and physical plans.</p>
-<p>For example, there could be separate physical plans for single-process versus distributed execution, or CPU versus GPU execution.</p>
-<p>Also, operations such as <code>Aggregate</code> and <code>Join</code> can be implemented with a variety of algorithms with different performance trade-offs. When aggregating data that is already sorted by the grouping keys, it is efficient to use a Group Aggregate (also known as a Sort Aggregate) which only needs to hold state for one set of grouping keys at a time and can emit a result as soon as one set of grouping keys ends. If the data is not sorted, then a Hash Aggregate is typically used. A Hash Aggregate maintains a HashMap of accumulators by grouping keys.</p>
-<p>Joins have an even wider variety of algorithms, including Nested Loop Join, Sort-Merge Join, and Hash Join.</p>
-<p>Physical plans return iterators over record batches.</p>
+<p>第五章定义的逻辑计划指明了要做什么，但没有说明如何去做，将逻辑计划和物理计划分开是一个好习惯，尽管可以将它们结合起来以降低复杂性。</p>
+<p>将逻辑计划和物理计划分开的原因之一是，有时可以有多种方法来执行特定操作，这意味着逻辑计划和物理计划之间存在一对多的关系。</p>
+<p>例如，单进程与分布式执行、CPU 与 GPU 执行可能有不同的物理计划。</p>
+<p>此外，诸如 <code>聚合（Aggregate）</code> 和 <code>联表（Join）</code> 之类的操作可以通过各种算法实现，并且具有不同的性能权衡。当聚合已经按 分组字段（grouping keys）排序的数据时，使用 Group Aggregate（也称为Sort Aggregate）非常有效，它一次只需要保存一组 分组字段（grouping keys）的状态，并且可以在一组数据处理完毕立即给出结果。如果数据未排序，则通常使用哈希聚合，哈希聚合通过对键进行分组来维护一个 HashMap 累加器。</p>
+<p>联表则有更广泛的算法选择，包括 嵌套循环连接（Nested Loop Join）、排序合并连接（Sort-Merge Join）和 哈希连接（Hash Join）。</p>
+<p>物理计划返回 记录批次（record batches）的迭代器。</p>
 <pre><code class="language-kotlin">interface PhysicalPlan {
   fun schema(): Schema
   fun execute(): Sequence&lt;RecordBatch&gt;
   fun children(): List&lt;PhysicalPlan&gt;
 }
 </code></pre>
-<h2 id="physical-expressions"><a class="header" href="#physical-expressions">Physical Expressions</a></h2>
-<p>We have defined logical expressions that are referenced in the logical plans, but we now need to implement physical expression classes containing the code to evaluate the expressions at runtime.</p>
-<p>There could be multiple physical expression implementations for each logical expression. For example, for the logical expression <code>AddExpr</code> that adds two numbers, we could have one implementation that uses the CPU and one that uses the GPU. The query planner could choose which one to use based on the hardware capabilities of the server that the code is running on.</p>
-<p>Physical expressions are evaluated against record batches and the results are columns.</p>
-<p>Here is the interface that we will use to represent physical expressions.</p>
+<h2 id="物理表达式"><a class="header" href="#物理表达式">物理表达式</a></h2>
+<p>我们已经定义了逻辑计划中引用的逻辑表达式，但现在需要实现包含代码的物理表达式类，以在运行时计算表达式。</p>
+<p>每个逻辑表达式可以有多个物理表达式实现。例如，对于将两个数字相加的逻辑表达式 <code>AddExpr</code>，我们可以有一种使用 CPU 的实现和一种使用 GPU 的实现。查询规划器可以根据运行代码的服务器的硬件能力来选择使用哪一个。</p>
+<p>物理表达式是针对 记录批次（record batches）进行计算的，其结果是列。</p>
+<p>以下是我们将用来表示物理表达式的接口。</p>
 <pre><code class="language-kotlin">interface Expression {
   fun evaluate(input: RecordBatch): ColumnVector
 }
 </code></pre>
-<h2 id="column-expressions"><a class="header" href="#column-expressions">Column Expressions</a></h2>
-<p>The <code>Column</code> expression simply evaluates to a reference to the <code>ColumnVector</code> in the <code>RecordBatch</code> being processed. The logical expression for <code>Column</code> references inputs by name, which is user-friendly for writing queries, but for the physical expression we want to avoid the cost of name lookups every time the expression is evaluated, so it references columns by index instead.</p>
+<h3 id="列表达式"><a class="header" href="#列表达式">列表达式</a></h3>
+<p><code>Column</code> 表达式简单地求值为对正在处理的 <code>RecordBatch</code> 中的 <code>ColumnVector</code> 的引用。<code>Column</code> 的逻辑表达式通过名称引用输入，这对编写查询来说是用户友好的，但对于物理表达式，我们希望避免每次评估表达式时都进行名称查找的成本，因此它改为通过索引引用列。</p>
 <pre><code class="language-kotlin">class ColumnExpression(val i: Int) : Expression {
 
   override fun evaluate(input: RecordBatch): ColumnVector {
@@ -215,8 +215,8 @@
   }
 }
 </code></pre>
-<h2 id="literal-expressions"><a class="header" href="#literal-expressions">Literal Expressions</a></h2>
-<p>The physical implementation of a literal expression is simply a literal value wrapped in a class that implements the appropriate trait and provides the same value for every index in a column.</p>
+<h3 id="字面量表达式"><a class="header" href="#字面量表达式">字面量表达式</a></h3>
+<p>字面量表达式的物理实现就是一个包装在类中的字面值，该类实现了相应特性并为列中每个索引提供相同的值。</p>
 <pre><code class="language-kotlin">class LiteralValueVector(
     val arrowType: ArrowType,
     val value: Any?,
@@ -239,7 +239,7 @@
 
 }
 </code></pre>
-<p>With this class in place, we can create our physical expressions for literal expressions of each data type.</p>
+<p>有了这个类，我们就可以为每种数据类型的字面量表达式创建物理表达式。</p>
 <pre><code class="language-kotlin">class LiteralLongExpression(val value: Long) : Expression {
   override fun evaluate(input: RecordBatch): ColumnVector {
     return LiteralValueVector(ArrowTypes.Int64Type,
@@ -264,8 +264,8 @@ class LiteralStringExpression(val value: String) : Expression {
   }
 }
 </code></pre>
-<h2 id="binary-expressions"><a class="header" href="#binary-expressions">Binary Expressions</a></h2>
-<p>For binary expressions, we need to evaluate the left and right input expressions and then evaluate the specific binary operator against those input values, so we can provide a base class to simplify the implementation for each operator.</p>
+<h3 id="二元表达式"><a class="header" href="#二元表达式">二元表达式</a></h3>
+<p>对于二元表达式，我们需要计算左右输入表达式，然后根据这些输入值计算特定的二元运算符，因此我们可以提供一个基类来简化每个运算符的实现。</p>
 <pre><code class="language-kotlin">abstract class BinaryExpression(val l: Expression, val r: Expression) : Expression {
   override fun evaluate(input: RecordBatch): ColumnVector {
     val ll = l.evaluate(input)
@@ -282,9 +282,9 @@ class LiteralStringExpression(val value: String) : Expression {
   abstract fun evaluate(l: ColumnVector, r: ColumnVector) : ColumnVector
 }
 </code></pre>
-<h2 id="comparison-expressions"><a class="header" href="#comparison-expressions">Comparison Expressions</a></h2>
-<p>The comparison expressions simply compare all values in the two input columns and produce a new column (a bit vector) containing the results.</p>
-<p>Here is an example for the equality operator.</p>
+<h3 id="比较表达式"><a class="header" href="#比较表达式">比较表达式</a></h3>
+<p>比较表达式只是简单地比较两个输入列中的所有值并生成包含结果的新列（位向量 bit vector）。</p>
+<p>以下是相等运算符的一个例子。</p>
 <pre><code class="language-kotlin">class EqExpression(l: Expression,
                    r: Expression): BooleanExpression(l,r) {
 
@@ -303,8 +303,8 @@ class LiteralStringExpression(val value: String) : Expression {
   }
 }
 </code></pre>
-<h2 id="math-expressions"><a class="header" href="#math-expressions">Math Expressions</a></h2>
-<p>The implementation for math expressions is very similar to the code for comparison expressions. A base class is used for all math expressions.</p>
+<h3 id="数学表达式"><a class="header" href="#数学表达式">数学表达式</a></h3>
+<p>数学表达式的实现与比较表达式的代码非常相似。一个基类可以用于所有数学表达式。</p>
 <pre><code class="language-kotlin">abstract class MathExpression(l: Expression,
                               r: Expression): BinaryExpression(l,r) {
 
@@ -322,7 +322,7 @@ class LiteralStringExpression(val value: String) : Expression {
   abstract fun evaluate(l: Any?, r: Any?, arrowType: ArrowType) : Any?
 }
 </code></pre>
-<p>Here is an example of a specific math expression extending this base class.</p>
+<p>下面是扩展此基类的特定数学表达式的一个例子。</p>
 <pre><code class="language-kotlin">class AddExpression(l: Expression,
                     r: Expression): MathExpression(l,r) {
 
@@ -344,9 +344,9 @@ class LiteralStringExpression(val value: String) : Expression {
   }
 }
 </code></pre>
-<h2 id="aggregate-expressions"><a class="header" href="#aggregate-expressions">Aggregate Expressions</a></h2>
-<p>The expressions we have looked at so far produce one output column from one or more input columns in each batch. Aggregate expressions are more complex because they aggregate values across multiple batches of data and then produce one final value, so we need to introduce the concept of accumulators, and the physical representation of each aggregate expression needs to know how to produce an appropriate accumulator for the query engine to pass input data to.</p>
-<p>Here are the main interfaces for representing aggregate expressions and accumulators.</p>
+<h3 id="聚合表达式"><a class="header" href="#聚合表达式">聚合表达式</a></h3>
+<p>到目前为止，我们所研究的表达式都是从每个批次中的一列或多列输入生成一个输出列。聚合表达式会更复杂，因为它们聚合多批数据中的值，然后生成一个最终值，因此我们需要引入累加器的概念，每个聚合表达式的物理表示需要知道如何为查询引擎生成适当的累加器来传递输入数据。</p>
+<p>以下是表示聚合表达式和累加器的主要接口。</p>
 <pre><code class="language-kotlin">interface AggregateExpression {
   fun inputExpression(): Expression
   fun createAccumulator(): Accumulator
@@ -357,7 +357,7 @@ interface Accumulator {
   fun finalValue(): Any?
 }
 </code></pre>
-<p>The implementation for the <code>Max</code> aggregate expression would produce a specific MaxAccumulator.</p>
+<p>聚合表达式 <code>Max</code> 的实现将会生成一个特定的 最大值累加器（MaxAccumulator）。</p>
 <pre><code class="language-kotlin">class MaxExpression(private val expr: Expression) : AggregateExpression {
 
   override fun inputExpression(): Expression {
@@ -373,7 +373,7 @@ interface Accumulator {
   }
 }
 </code></pre>
-<p>Here is an example implementation of the MaxAccumulator.</p>
+<p>以下是 MaxAccumulator 的实现示例。</p>
 <pre><code class="language-kotlin">class MaxAccumulator : Accumulator {
 
   var value: Any? = null
@@ -407,10 +407,10 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h2 id="physical-plans"><a class="header" href="#physical-plans">Physical Plans</a></h2>
-<p>With the physical expressions in place, we can now implement the physical plans for the various transformations that the query engine will support.</p>
-<h2 id="scan"><a class="header" href="#scan">Scan</a></h2>
-<p>The Scan execution plan simply delegates to a data source, passing in a projection to limit the number of columns to load into memory. No additional logic is performed.</p>
+<h2 id="物理计划"><a class="header" href="#物理计划">物理计划</a></h2>
+<p>有了物理表达式之后，我们现在可以为查询引擎将支持各种转换实现物理计划了。</p>
+<h3 id="扫描"><a class="header" href="#扫描">扫描</a></h3>
+<p><code>Scan</code> 执行计划只是委派给数据源，传入一个 映射（Projection）来限制加载到内存中的列。不执行附加逻辑。</p>
 <pre><code class="language-kotlin">class ScanExec(val ds: DataSource, val projection: List&lt;String&gt;) : PhysicalPlan {
 
   override fun schema(): Schema {
@@ -431,8 +431,8 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h2 id="projection"><a class="header" href="#projection">Projection</a></h2>
-<p>The projection execution plan simply evaluates the projection expressions against the input columns and then produces a record batch containing the derived columns. Note that for the case of projection expressions that reference existing columns by name, the derived column is simply a pointer or reference to the input column, so the underlying data values are not being copied.</p>
+<h3 id="映射"><a class="header" href="#映射">映射</a></h3>
+<p>映射（Projection）执行计划只是根据输入列评估映射（Projection）表达式，然后生成包含派生列的记录批次（record batch）。请注意，对于按名称引用现有列的映射（Projection）表达式的情况，派生列只是对输入列的指针或引用，因此不会复制底层数据。</p>
 <pre><code class="language-kotlin">class ProjectionExec(
     val input: PhysicalPlan,
     val schema: Schema,
@@ -458,9 +458,9 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h2 id="selection-also-known-as-filter"><a class="header" href="#selection-also-known-as-filter">Selection (also known as Filter)</a></h2>
-<p>The selection execution plan is the first non-trivial plan, since it has conditional logic to determine which rows from the input record batch should be included in the output batches.</p>
-<p>For each input batch, the filter expression is evaluated to return a bit vector containing bits representing the Boolean result of the expression, with one bit for each row. This bit vector is then used to filter the input columns to produce new output columns. This is a simple implementation that could be optimized for cases where the bit vector contains all ones or all zeros to avoid overhead of copying data to new vectors.</p>
+<h3 id="筛选也称为过滤器"><a class="header" href="#筛选也称为过滤器">筛选（也称为过滤器）</a></h3>
+<p>筛选执行计划是第一个重要的计划，因为它具有条件逻辑来确定输入记录批次中的哪些行应包含在输出批次中。</p>
+<p>对于每个输入批次，筛选表达式被执行以返回一个位向量（bit vector），其中包含表示表达式布尔结果的位，每行一位。然后使用该位向量过滤输入列以生成新的输出列。这是一种简单实现，可以针对位向量包含全 1 或全 0 的情况进行优化，以避免将数据复制到新向量的开销。</p>
 <pre><code class="language-kotlin">class SelectionExec(
     val input: PhysicalPlan,
     val expr: Expression) : PhysicalPlan {
@@ -505,8 +505,8 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h2 id="hash-aggregate"><a class="header" href="#hash-aggregate">Hash Aggregate</a></h2>
-<p>The HashAggregate plan is more complex than the previous plans because it must process all incoming batches and maintain a HashMap of accumulators and update the accumulators for each row being processed. Finally, the results from the accumulators are used to create one record batch at the end containing the results of the aggregate query.</p>
+<h3 id="哈希聚合"><a class="header" href="#哈希聚合">哈希聚合</a></h3>
+<p>哈希聚合计划（HashAggregate）比以前的计划更复杂，因为它必须处理所有传入批次并维护累加器的 HashMap 并更新正在处理的每一行的累加器。最后，利用累加器结果创建一个包含聚合查询结果的记录批次（record batch）。</p>
 <pre><code class="language-kotlin">class HashAggregateExec(
     val input: PhysicalPlan,
     val groupExpr: List&lt;PhysicalExpr&gt;,
@@ -590,35 +590,35 @@ interface Accumulator {
 
 }
 </code></pre>
-<h2 id="joins"><a class="header" href="#joins">Joins</a></h2>
-<p>As the name suggests, the Join operator joins rows from two relations. There are a number of different types of joins with different semantics:</p>
+<h3 id="联表"><a class="header" href="#联表">联表</a></h3>
+<p>顾名思义，Join 运算符连接两个关系中的行。有许多不同类型的具有不同的语义 Join：</p>
 <ul>
-<li><code>[INNER] JOIN</code>: This is the most commonly used join type and creates a new relation containing rows from both the left and right inputs. When the join expression consists only of equality comparisons between columns from the left and right inputs then the join is known as an "equi-join". An example of an equi-join would be <code>SELECT * FROM customer JOIN orders ON customer.id = order.customer_id</code>.</li>
-<li><code>LEFT [OUTER] JOIN</code>: A left outer join produces rows that contain all values from the left input, and optionally rows from the right input. Where this is no match on the right-hand side then null values are produced for the right columns.</li>
-<li><code>RIGHT [OUTER] JOIN</code>: This is the opposite of the left join. All rows from the right are returned along with rows from the left where available.</li>
-<li><code>SEMI JOIN</code>: A semi join is similar to a left join but it only returns rows from the left input where there is match to the right input. No data is returned from the right input. Not all SQL implementations support semi joins explicitly and they are often written as subqueries instead. An example of a semi join would be <code>SELECT id FROM foo WHERE EXISTS (SELECT * FROM bar WHERE foo.id = bar.id)</code>.</li>
-<li><code>ANTI JOIN</code>: An into join is the opposite of a semi join. It only returns rows from the left input where this is match on the right input. An example of an anti join would be <code>SELECT id FROM foo WHERE NOT EXISTS (SELECT * FROM bar WHERE foo.id = bar.id)</code>.</li>
-<li><code>CROSS JOIN</code>: A cross join returns every possible combination of rows from the left input combined with rows from the right input. If the left input contains 100 rows and the right input contains 200 rows then 20,000 rows will be returned. This is known as a cartesian product.</li>
+<li><code>[INNER] JOIN</code>: 这是最常用的联表类型，创建一个包含来自左右输入的行的新关系行。当连接表达式仅包含左右输入的列之间的相等比较时，该连接称为“等连接”。等连接的一个例子是 <code>SELECT * FROM customer JOIN orders ON customer.id = order.customer_id</code>。</li>
+<li><code>LEFT [OUTER] JOIN</code>: 左外连接生成包含左输入中所有值的行，并包含匹配条件的右输入中的行。如果右侧不匹配，则为右侧列生成空值。</li>
+<li><code>RIGHT [OUTER] JOIN</code>: 这与左连接相反。返回右输入的所有行，并包含匹配条件的左输入中的行。如果左侧不匹配，则为左侧列生成空值。</li>
+<li><code>SEMI JOIN</code>: 半连接类似于左连接，但它只返回左输入中与右输入匹配的行，不会从右输入返回任何数据。并非所有 SQL 实现都显式支持半连接，它们通常被编写为子查询。半连接的一个例子是 <code>SELECT id FROM foo WHERE EXISTS (SELECT * FROM bar WHERE foo.id = bar.id)</code>。</li>
+<li><code>ANTI JOIN</code>: 反连接与半连接相反，仅返回左输入中与右输入不匹配的行。反连接的一个例子是 <code>SELECT id FROM foo WHERE NOT EXISTS (SELECT * FROM bar WHERE foo.id = bar.id)</code>。</li>
+<li><code>CROSS JOIN</code>: 交叉连接返回左输入中的行与右输入中的行的所有可能组合。如果左侧输入包含 100 行，右侧输入包含 200 行，则将返回 20,000 行。这称为笛卡尔积。</li>
 </ul>
-<p>KQuery does not yet implement the join operator.</p>
-<h2 id="subqueries"><a class="header" href="#subqueries">Subqueries</a></h2>
-<p>Subqueries are queries within queries. They can be correlated or uncorrelated (involving a join to other relations or not). When a subquery returns a single value then it is known as a scalar subquery.</p>
-<h3 id="scalar-subqueries"><a class="header" href="#scalar-subqueries">Scalar subqueries</a></h3>
-<p>A scalar subquery returns a single value and can be used in many SQL expressions where a literal value could be used.</p>
-<p><em>Here is an example of a correlated scalar subquery:</em></p>
-<p><code>SELECT id, name, (SELECT count(*) FROM orders WHERE customer_id = customer.id) AS num_orders FROM customers</code></p>
-<p><em>Here is an example of an uncorrelated scalar subquery:</em></p>
+<p>KQuery 尚未实现 Join 运算符。</p>
+<h3 id="子查询"><a class="header" href="#子查询">子查询</a></h3>
+<p>子查询是查询中的查询。它们可以是相关的，也可以是不相关的（涉及或不涉及其他关系的联接）。当子查询返回单一值时，它被称为标量子查询。</p>
+<h4 id="标量子查询"><a class="header" href="#标量子查询">标量子查询</a></h4>
+<p>标量子查询返回单个值，并且可以在许多可以使用字面量的 SQL 表达式中使用。</p>
+<p><em>下面是相关性标量子查询的一个例子：</em></p>
+<p><code>SELECT id, name, (SELECT count(*) FROM orders WHERE customer_id = customers.id) AS num_orders FROM customers</code></p>
+<p><em>下面是无相关性标量子查询的一个例子：</em></p>
 <p><code>SELECT * FROM orders WHERE total &gt; (SELECT avg(total) FROM sales WHERE customer_state = 'CA')</code></p>
-<p>Correlated subqueries are translated into joins before execution (this is explained in chapter 9).</p>
-<p>Uncorrelated queries can be executed individually and the resulting value can be substituted into the top-level query.</p>
-<h3 id="exists-and-in-subqueries"><a class="header" href="#exists-and-in-subqueries">EXISTS and IN subqueries</a></h3>
-<p>The <code>EXISTS</code> and <code>IN</code> expressions (and their negated forms, <code>NOT EXISTS</code> and <code>NOT IN</code>) can be used to create semi-joins and anti-joins.</p>
-<p>Here is an example of a semi-join that selects all rows from the left relation (<code>foo</code>) where there is a matching row returned by the subquery.</p>
+<p>相关性子查询在执行之前被转换为连接（这将在第 9 章中解释）。</p>
+<p>无相关性的查询可以单独执行，并且结果值可以替换到上级查询中。</p>
+<h4 id="exists-和-in-子查询"><a class="header" href="#exists-和-in-子查询">EXISTS 和 IN 子查询</a></h4>
+<p><code>EXISTS</code> 和 <code>IN</code> 表达式（及其否定形式，<code>NOT EXISTS</code> 和 <code>NOT IN</code>）可以用来创建半连接和反连接。</p>
+<p>下面是一个半连接的示例，它选择左侧关系（<code>foo</code>）中所有与子查询返回的行匹配的行。</p>
 <p><code>SELECT id FROM foo WHERE EXISTS (SELECT * FROM bar WHERE foo.id = bar.id)</code></p>
-<p>Correlated subqueries are typically converted into joins during logical plan optimization (this is explained in chapter 9)</p>
-<p>KQuery does not yet implement subqueries.</p>
-<h2 id="creating-physical-plans"><a class="header" href="#creating-physical-plans">Creating Physical Plans</a></h2>
-<p>With our physical plans in place, the next step is to build a query planner to create physical plans from logical plans, which we cover in the next chapter.</p>
+<p>相关性子查询通常在逻辑计划优化期间转换为 联表（这在第 9 章中进行了解释）</p>
+<p>KQuery 尚未实现子查询。</p>
+<h2 id="创建物理计划"><a class="header" href="#创建物理计划">创建物理计划</a></h2>
+<p>有了物理计划，下一步是构建一个查询规划器，从逻辑计划创建物理计划，我们将在下一章中讲解。</p>
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 
