@@ -28,10 +28,9 @@ fun createPhysicalExpr(expr: LogicalExpr,
 
 ### 列表达式（Column Expressions）
 
+逻辑列表达式按名称引用列，但物理表达式使用列索引来提高性能，因此查询规划器需要执行从列名到列索引的转换，并在列名无效时抛出异常。
 
-The logical Column expression references columns by name, but the physical expression uses column indices for improved performance, so the query planner needs to perform the translation from column name to column index and throw an exception if the column name is not valid.
-
-This simplified example looks for the first matching column name and does not check if there are multiple matching columns, which should be an error condition.
+这个简化的示例查找第一个匹配的列名称，并没有检查是否有多个匹配的列，这应该是一个错误条件。
 
 ```kotlin
 is Column -> {
@@ -44,7 +43,7 @@ is Column -> {
 
 ### 字面量表达式（Literal Expressions）
 
-The physical expressions for literal values are straightforward, and the mapping from logical to physical expression is trivial because we need to copy the literal value over.
+字面量的物理表达式很简单，从逻辑表达式到物理表达式的映射很简单，因为我们需要复制字面值。
 
 ```kotlin
 is LiteralLong -> LiteralLongExpression(expr.n)
@@ -54,7 +53,7 @@ is LiteralString -> LiteralStringExpression(expr.str)
 
 ### 二元表达式（Binary Expressions）
 
-To create a physical expression for a binary expression we first need to create the physical expression for the left and right inputs and then we need to create the specific physical expression.
+要为二元表达式创建物理表达式，我们首先需要为左右输入创建物理表达式，然后需要创建特定的物理表达式。
 
 ```kotlin
 is BinaryExpr -> {
@@ -87,7 +86,7 @@ is BinaryExpr -> {
 
 ## 转换逻辑计划
 
-We need to implement a recursive function to walk the logical plan tree and translate it into a physical plan, using the same pattern described earlier for translating expressions.
+我们需要实现一个递归函数来遍历逻辑计划树并将其转换为物理计划，使用前面描述的转换表达式的相同模式。
 
 ```kotlin
 fun createPhysicalPlan(plan: LogicalPlan) : PhysicalPlan {
@@ -100,7 +99,7 @@ fun createPhysicalPlan(plan: LogicalPlan) : PhysicalPlan {
 
 ### 扫描（Scan）
 
-Translating the Scan plan simply requires copying the data source reference and the logical plan's projection.
+转换扫描计划只需复制数据源引用和逻辑计划的映射。
 
 ```kotlin
 is Scan -> ScanExec(plan.dataSource, plan.projection)
@@ -108,7 +107,7 @@ is Scan -> ScanExec(plan.dataSource, plan.projection)
 
 ### 映射（Projection）
 
-There are two steps to translating a projection. First, we need to create a physical plan for the projection's input, and then we need to convert the projection's logical expressions to physical expressions.
+转换映射有两个步骤。首先，我们需要为映射的输入创建一个物理计划，然后我们需要将映射的逻辑表达式转换为物理表达式。
 
 ```kotlin
 is Projection -> {
@@ -121,7 +120,7 @@ is Projection -> {
 
 ### 筛选（也称为过滤器）（Selection (also known as Filter)）
 
-The query planning step for `Selection` is very similar to `Projection`.
+`Selection` 的查询规划步骤与 `Projection` 非常相似。
 
 ```kotlin
 is Selection -> {
@@ -133,7 +132,7 @@ is Selection -> {
 
 ### 聚合（Aggregate）
 
-The query planning step for aggregate queries involves evaluating the expressions that define the optional grouping keys and evaluating the expressions that are the inputs to the aggregate functions, and then creating the physical aggregate expressions.
+聚合查询的查询规划步骤涉及计算定义可选 分组键（grouping keys）的表达式和计算作为聚合函数的输入的表达式，然后创建物理聚合表达式。
 
 ```kotlin
 is Aggregate -> {
