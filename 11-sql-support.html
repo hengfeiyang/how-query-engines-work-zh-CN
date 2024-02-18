@@ -181,10 +181,10 @@
                     <main>
                         <h1 id="sql-支持"><a class="header" href="#sql-支持">SQL 支持</a></h1>
 <p><em>本章所讨论的源代码可以在 <a href="https://github.com/andygrove/how-query-engines-work">KQuery 项目</a> 的 <code>sql</code> 模块中找到。</em></p>
-<p>In addition to having the ability to hand-code logical plans, it would be more convenient in some cases to just write SQL. In this chapter, we will build a SQL parser and query planner that can translate SQL queries into logical plans.</p>
-<h2 id="tokenizer"><a class="header" href="#tokenizer">Tokenizer</a></h2>
-<p>The first step is to convert the SQL query string into a list of tokens representing keywords, literals, identifiers, and operators.</p>
-<p>This is a subset of all possible tokens, but it is sufficient for now.</p>
+<p>除了能够手写逻辑计划之外，在某些情况下只编写 SQL 会更方便。在本章中，我们将构建一个 SQL 解析器和查询计划器，可以将 SQL 查询转换为逻辑计划。</p>
+<h2 id="分词器-tokenizer"><a class="header" href="#分词器-tokenizer">分词器 Tokenizer</a></h2>
+<p>第一步是将 SQL 查询字符串转换为表示关键字、字面量、标识符和运算符的标记列表。</p>
+<p>这只是所有可能标记的子集，但现在已经足够了。</p>
 <pre><code class="language-kotlin">interface Token
 data class IdentifierToken(val s: String) : Token
 data class LiteralStringToken(val s: String) : Token
@@ -192,14 +192,14 @@ data class LiteralLongToken(val s: String) : Token
 data class KeywordToken(val s: String) : Token
 data class OperatorToken(val s: String) : Token
 </code></pre>
-<p>We will then need a tokenizer class. This is not particularly interesting to walk through here, and full source code can be found in the companion GitHub repository.</p>
+<p>然后我们需要一个分词器类。在这里没有特别必要完整的过一遍，完整的源代码可以在配套的 GitHub 代码库中找到。</p>
 <pre><code class="language-kotlin">class Tokenizer {
   fun tokenize(sql: String): List&lt;Token&gt; {
     // see github repo for code
   }
 }
 </code></pre>
-<p>Given the input <code>"SELECT a + b FROM c"</code> we expect the output to be as follows:</p>
+<p>给定输入 <code>"SELECT a + b FROM c"</code> 我们期望输出如下：</p>
 <pre><code class="language-kotlin">listOf(
   KeywordToken("SELECT"),
   IdentifierToken("a"),
@@ -209,9 +209,9 @@ data class OperatorToken(val s: String) : Token
   IdentifierToken("c")
 )
 </code></pre>
-<h2 id="pratt-parser"><a class="header" href="#pratt-parser">Pratt Parser</a></h2>
-<p>We are going to hand-code a SQL parser based on the <a href="https://tdop.github.io/">Top Down Operator Precedence</a> paper published by Vaughan R. Pratt in 1973. Although there are other approaches to building SQL parsers such as using Parser Generators and Parser Combinators, I have found Pratt's approach to work well and it results in code that is efficient, easy to comprehend, and easy to debug.</p>
-<p>Here is a bare-bones implementation of a Pratt parser. In my opinion, it is beautiful in its simplicity. Expression parsing is performed by a simple loop that parses a "prefix" expression followed by an optional "infix" expression and keeps doing this until the precedence changes in such a way that the parser recognizes that it has finished parsing the expression. Of course, the implementation of <code>parsePrefix</code> and <code>parseInfix</code> can recursively call back into the <code>parse</code> method and this is where it becomes very powerful.</p>
+<h2 id="pratt-解析器"><a class="header" href="#pratt-解析器">Pratt 解析器</a></h2>
+<p>我们将根据 Vaughan R. Pratt 于 1973 年发表的 <a href="https://tdop.github.io/">Top Down Operator Precedence</a> 论文手动编写 SQL 解析器。尽管还有其他方法来构建 SQL 解析器，例如使用解析器生成器和解析器组合器，但我发现了 Pratt 的方法工作良好，代码高效、易于理解且易于调试。</p>
+<p>这是 Pratt 解析器的简单实现。在我看来，它的美丽在于它的简单。表达式解析是通过一个简单的循环来执行的，该循环解析“前缀”表达式，后跟一个可选的“中缀”表达式，并继续执行此操作，直到优先级发生变化，使解析器认识到它已完成对表达式的解析。当然，<code>parsePrefix</code> 和 <code>parseInfix</code> 的实现可以递归地回调  <code>parse</code> 方法，这就是它变得非常强大的地方。</p>
 <pre><code class="language-kotlin">interface PrattParser {
 
   /** Parse an expression */
@@ -234,8 +234,8 @@ data class OperatorToken(val s: String) : Token
 
 }
 </code></pre>
-<p>This interface refers to a new <code>SqlExpr</code> class which will be our representation of a parsed expression and will largely be a one to one mapping to the expressions defined in the logical plan but for binary expressions we can use a more generic structure where the operator is a string rather than create separate data structures for all the different binary expressions that we will support.</p>
-<p>Here are some examples of <code>SqlExpr</code> implementations.</p>
+<p>该接口引用一个新 <code>SqlExpr</code> 类，它将作为解析表达式的表示，并且很大程度上会与逻辑计划中定义的表达式一一对应，但对于二元表达式，我们可以使用更通用的结构，其中运算符是字符串而不是为所有不同二元表达式创建单独数据结构。</p>
+<p>以下是一些实现 <code>SqlExpr</code> 的例子。</p>
 <pre><code class="language-kotlin">/** SQL Expression */
 interface SqlExpr
 
@@ -254,11 +254,11 @@ data class SqlString(val value: String) : SqlExpr {
   override fun toString() = "'$value'"
 }
 </code></pre>
-<p>With these classes in place it is possible to represent the expression <code>foo = 'bar'</code> with the following code.</p>
+<p>有了这些类后，就可以用下面代码表示 <code>foo = 'bar'</code>。</p>
 <pre><code class="language-kotlin">val sqlExpr = SqlBinaryExpr(SqlIdentifier("foo"), "=", SqlString("bar"))
 </code></pre>
-<h2 id="parsing-sql-expressions"><a class="header" href="#parsing-sql-expressions">Parsing SQL Expressions</a></h2>
-<p>Let's walk through this approach for parsing a simple math expression such as <code>1 + 2 * 3</code>. This expression consists of the following tokens.</p>
+<h2 id="解析-sql-表达式"><a class="header" href="#解析-sql-表达式">解析 SQL 表达式</a></h2>
+<p>让我们通过解析一个简单的数学表达式 <code>1 + 2 * 3</code> 来逐步了解这种方法，该表达式由以下标记组成。</p>
 <pre><code class="language-kotlin">listOf(
   LiteralLongToken("1"),
   OperatorToken("+"),
@@ -267,11 +267,11 @@ data class SqlString(val value: String) : SqlExpr {
   LiteralLongToken("3")
 )
 </code></pre>
-<p>We need to create an implementation of the <code>PrattParser</code> trait and pass the tokens into the constructor. The tokens are wrapped in a <code>TokenStream</code> class that provides some convenience methods such as <code>next</code> for consuming the next token, and <code>peek</code> for when we want to look ahead without consuming a token.</p>
+<p>我们需要创建一个实现了 <code>PrattParser</code> 特性（trait） 的对象，并将标记（tokens）传入构造函数。这些标记（tokens）被包装在一个 <code>TokenStream</code> 类中，该类提供了一些方便的方法，例如<code>next</code> 用于消耗下一个标记（tokens），以及 <code>peek</code> 当我们想要向前查看而不消耗标记（token）时。</p>
 <pre><code class="language-kotlin">class SqlParser(val tokens: TokenStream) : PrattParser {
 }
 </code></pre>
-<p>Implementing the <code>nextPrecedence</code> method is simple because we only have a small number of tokens that have any precedence here and we need to have the multiplication and division operators have higher precedence than the addition and subtraction operator. Note that the specific numbers returned by this method are not important since they are just used for comparisons. A good reference for operator precedence can be found in the <a href="https://www.postgresql.org/docs/7.2/sql-precedence.html">PostgreSQL documentation</a>.</p>
+<p>实现 <code>nextPrecedence</code> 方法很简单，因为我们只有少量具有优先级的标记（token），我们需要让<code>乘法</code> 和 <code>除法</code> 运算符具有比 <code>加法</code> 和 <code>减法</code> 运算符更高的优先级。请注意，此方法返回的具体数字并不重要，因为它们仅用于比较。关于运算符优先级的一个很好的参考可以在 <a href="https://www.postgresql.org/docs/7.2/sql-precedence.html">PostgreSQL documentation</a> 中找到。</p>
 <pre><code class="language-kotlin">override fun nextPrecedence(): Int {
   val token = tokens.peek()
   return when (token) {
@@ -286,7 +286,7 @@ data class SqlString(val value: String) : SqlExpr {
   }
 }
 </code></pre>
-<p>The prefix parser just needs to know how to parse literal numeric values.</p>
+<p>前缀解析器只需要知道如何解析字面数值。</p>
 <pre><code class="language-kotlin">override fun parsePrefix(): SqlExpr? {
   val token = tokens.next() ?: return null
   return when (token) {
@@ -295,7 +295,7 @@ data class SqlString(val value: String) : SqlExpr {
   }
 }
 </code></pre>
-<p>The infix parser just needs to know how to parse operators. Note that after parsing an operator, this method recursively calls back into the top level <code>parse</code> method to parse the expression following the operator (the right-hand side of the binary expression).</p>
+<p>中缀解析器只需要知道如何解析运算符。请注意，解析运算符后，此方法会递归回调上层的 <code>parse</code> 方法来解析运算符后面的表达式（二元表达式的右侧）。</p>
 <pre><code class="language-kotlin">override fun parseInfix(left: SqlExpr, precedence: Int): SqlExpr {
   val token = tokens.peek()
   return when (token) {
@@ -308,60 +308,60 @@ data class SqlString(val value: String) : SqlExpr {
   }
 }
 </code></pre>
-<p>The precedence logic can be demonstrated by parsing the math expressions <code>1 + 2 * 3</code> and <code>1 * 2 + 3</code> which should be parsed as <code>1 + (2 * 3)</code> and<code> (1 * 2) + 3</code> respectively.</p>
-<p><em>Example: Parsing <code>1 + 2 _ 3</code></em></p>
-<p>These are the tokens along with their precedence values.</p>
+<p>优先级逻辑可以通过解析数学表达式 <code>1 + 2 * 3</code> 和 <code>1 * 2 + 3</code> 来演示，它们应该被分别解析为 <code>1 + (2 * 3)</code> 和 <code>(1 * 2) + 3</code>。</p>
+<p><em>示例: 解析 <code>1 + 2 _ 3</code></em></p>
+<p>这些是标记及其优先级值。</p>
 <pre><code>Tokens:      [1]  [+]  [2]  [*]  [3]
 Precedence:  [0] [50]  [0] [60]  [0]
 </code></pre>
-<p>The final result correctly represents the expression as <code>1 + (2 * 3)</code>.</p>
+<p>最终结果正确地将表达式表示为 <code>1 + (2 * 3)</code>。</p>
 <pre><code class="language-kotlin">SqlBinaryExpr(
     SqlLong(1),
     "+",
     SqlBinaryExpr(SqlLong(2), "*", SqlLong(3))
 )
 </code></pre>
-<p><em>Example: Parsing <code>1 _ 2 + 3</code></em></p>
+<p><em>示例: 解析 <code>1 _ 2 + 3</code></em></p>
 <pre><code>Tokens:      [1]  [*]  [2]  [+]  [3]
 Precedence:  [0] [60]  [0] [50]  [0]
 </code></pre>
-<p>The final result correctly represents the expression as <code>(1 * 2) + 3</code>.</p>
+<p>最终结果正确地将表达式表示为 <code>(1 * 2) + 3</code>。</p>
 <pre><code class="language-kotlin">SqlBinaryExpr(
     SqlBinaryExpr(SqlLong(1), "*", SqlLong(2)),
     "+",
     SqlLong(3)
 )
 </code></pre>
-<h2 id="parsing-a-select-statement"><a class="header" href="#parsing-a-select-statement">Parsing a SELECT statement</a></h2>
-<p>Now that we have the ability to parse some simple expressions, the next step is to extend the parser to support parsing a SELECT statement into a concrete syntax tree (CST). Note that with other approaches to parsing such as using a parser generator like ANTLR there is an intermediate stage known as an Abstract Syntax Tree (AST) which then needs to be translated to a Concrete Syntax Tree but with the Pratt Parser approach we go directly from tokens to the CST.</p>
-<p>Here is an example CST that can represent a simple single-table query with a projection and selection. This will be extended to support more complex queries in later chapters.</p>
+<h2 id="解析-select-语句"><a class="header" href="#解析-select-语句">解析 SELECT 语句</a></h2>
+<p>现在我们已经能够解析一些简单的表达式，下一步是扩展解析器以支持将 SELECT 语句解析为具体语法树 (CST)。请注意，使用其他解析方法（例如使用像 ANTLR 这样的解析器生成器）时，有一个称为抽象语法树（AST）的中间阶段，然后需要将其转换为具体语法树，但使用 Pratt 解析器方法，我们直接从标记（tokens）生成 CST。</p>
+<p>下面是一个示例 CST，它可以表示带有映射（projection）和筛选（selection）的简单单表查询。将在后面的章节中扩展以支持更复杂的查询。</p>
 <pre><code class="language-kotlin">data class SqlSelect(
     val projection: List&lt;SqlExpr&gt;,
     val selection: SqlExpr,
     val tableName: String) : SqlRelation
 </code></pre>
-<h2 id="sql-query-planner"><a class="header" href="#sql-query-planner">SQL Query Planner</a></h2>
-<p>The SQL Query Planner translates the SQL Query Tree into a Logical Plan. This turns out to be a much harder problem than translating a logical plan to a physical plan due to the flexibility of the SQL language. For example, consider the following simple query.</p>
+<h2 id="sql-查询规划器-query-planner"><a class="header" href="#sql-查询规划器-query-planner">SQL 查询规划器 Query Planner</a></h2>
+<p>SQL 查询规划器将 SQL 查询树转换为逻辑计划。由于 SQL 语言的灵活性，这比将逻辑计划转换为物理计划要困难得多。例如，考虑以下简单查询。</p>
 <pre><code class="language-sql">SELECT id, first_name, last_name, salary/12 AS monthly_salary
 FROM employee
 WHERE state = 'CO' AND monthly_salary &gt; 1000
 </code></pre>
-<p>Although this is intuitive to a human reading the query, the selection part of the query (the <code>WHERE</code> clause) refers to one expression (<code>state</code>) that is not included in the output of the projection so clearly needs to be applied before the projection but also refers to another expression (<code>salary/12 AS monthly_salary</code>) which is only available after the projection is applied. We will face similar issues with the <code>GROUP BY</code>, <code>HAVING</code>, and <code>ORDER BY</code> clauses.</p>
-<p>There are multiple solutions to this problem. One approach would be to translate this query to the following logical plan, splitting the selection expression into two steps, one before and one after the projection. However, this is only possible because the selection expression is a conjunctive predicate (the expression is true only if all parts are true) and this approach might not be possible for more complex expressions. If the expression had been <code>state = 'CO' OR monthly_salary &gt; 1000</code> then we could not do this.</p>
+<p>尽管这对于阅读查询的人来说很直观，但查询的选择部分（<code>WHERE</code>子句）引用了一个不包含在映射（selection）输出中的表达式（<code>state</code>），因此显然需要在投影之前应用它，同时还引用另一个表达式（<code>salary/12 AS monthly_salary</code>) 仅在应用映射后才可用。我们还会遇到类似 <code>GROUP BY</code>, <code>HAVING</code>, 和 <code>ORDER BY</code> 子句等问题。</p>
+<p>这个问题有多种解决方案。一种方法是将此查询转换为以下逻辑计划，将选择表达式分为两个步骤，一个在映射之前，一个在映射之后。然而，只有当选择表达式是连接性断言（conjunctive predicate）（即所有部分都为真时，表达式才为真）时这种方法才可能行得通，对于更复杂的表达式来说，这种方法可能就不适用了。如果表达式是 <code>state = 'CO' OR monthly_salary &gt; 1000</code> 那么我们就不能这样做。</p>
 <pre><code>Filter: #monthly_salary &gt; 1000
   Projection: #id, #first_name, #last_name, #salary/12 AS monthly_salary
     Filter: #state = 'CO'
       Scan: table=employee
 </code></pre>
-<p>A simpler and more generic approach would be to add all the required expressions to the projection so that the selection can be applied after the projection, and then remove any columns that were added by wrapping the output in another projection.</p>
+<p>一种更简单、更通用的方法是将所有必需的表达式添加到映射（projection），以便可以在映射之后应用选择（selection），然后删除 通过将输出包装在另一个映射中而添加的列。</p>
 <pre><code>Projection: #id, #first_name, #last_name, #monthly_salary
   Filter: #state = 'CO' AND #monthly_salary &gt; 1000
     Projection: #id, #first_name, #last_name, #salary/12 AS monthly_salary, #state
       Scan: table=employee
 </code></pre>
-<p>It is worth noting that we will build a "Predicate Push Down" query optimizer rule in a later chapter that will be able to optimize this plan and push the <code>state = 'CO'</code> part of the predicate further down in the plan so that it is before the projection.</p>
-<h2 id="translating-sql-expressions"><a class="header" href="#translating-sql-expressions">Translating SQL Expressions</a></h2>
-<p>Translating SQL expressions to logical expressions is fairly simple, as demonstrated in this example code.</p>
+<p>值得注意的是，我们将在后面的章节中构建一个“断言下推（Predicate Push Down）”查询优化器规则，该规则将能够优化该计划并将 <code>state = 'CO'</code> 断言部分在计划中进一步下推，使其位于映射之前。</p>
+<h2 id="转换-sql-表达式"><a class="header" href="#转换-sql-表达式">转换 SQL 表达式</a></h2>
+<p>将 SQL 表达式转换为逻辑表达式相当简单，如本示例代码所示。</p>
 <pre><code class="language-kotlin">private fun createLogicalExpr(expr: SqlExpr, input: DataFrame) : LogicalExpr {
   return when (expr) {
     is SqlIdentifier -&gt; Column(expr.id)
@@ -397,8 +397,8 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
   }
 }
 </code></pre>
-<h2 id="planning-select"><a class="header" href="#planning-select">Planning SELECT</a></h2>
-<p>If we only wanted to support the use case where all columns referenced in the selection also exist in the projection we could get away with some very simple logic to build the query plan.</p>
+<h2 id="规划选择"><a class="header" href="#规划选择">规划选择</a></h2>
+<p>如果我们只想支持所有在选择中引用的列也存在于映射中的用例，我们可以通过一些非常简单的逻辑来构建查询计划。</p>
 <pre><code class="language-kotlin">fun createDataFrame(select: SqlSelect, tables: Map&lt;String, DataFrame&gt;) : DataFrame {
 
   // get a reference to the data source
@@ -417,8 +417,8 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
            .filter(createLogicalExpr(select.selection, df))
 }
 </code></pre>
-<p>However, because the selection could reference both inputs to the projections and outputs from the projection we need to create a more complex plan with an intermediate projection. The first step is to determine which columns are references by the selection filter expression. To do this we will use the visitor pattern to walk the expression tree and build a mutable set of column names.</p>
-<p>Here is the utility method we will use to walk the expression tree.</p>
+<p>然而，由于选择可能同时引用映射的输入和输出，因此我们需要创建一个更复杂的带有中间投影的计划。第一步是确定哪些列被选择过滤表达式引用。为此，我们将使用访问者模式来遍历表达式树并构建一个可变的列名称集合。</p>
+<p>以下是我们将用来遍历表达式树的实用方法。</p>
 <pre><code class="language-kotlin">private fun visit(expr: LogicalExpr, accumulator: MutableSet&lt;String&gt;) {
   when (expr) {
     is Column -&gt; accumulator.add(expr.name)
@@ -430,7 +430,7 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
   }
 }
 </code></pre>
-<p>With this in place we can now write the following code to convert a SELECT statement into a valid logical plan. This code sample is not perfect and probably contains some bugs for edge cases where there are name clashes between columns in the data source and aliased expressions but we will ignore this for the moment to keep the code simple.</p>
+<p>有了这个，我们现在可以编写以下代码将 SELECT 语句转换为有效的逻辑计划。此代码示例并不完美，可能包含一些边缘情况的错误，其中数据源中的列和别名表达式之间存在名称冲突，但是为了保持代码简洁暂时忽略它们。</p>
 <pre><code class="language-kotlin">fun createDataFrame(select: SqlSelect, tables: Map&lt;String, DataFrame&gt;) : DataFrame {
 
   // get a reference to the data source
@@ -479,8 +479,8 @@ WHERE state = 'CO' AND monthly_salary &gt; 1000
             })
 }
 </code></pre>
-<h2 id="planning-for-aggregate-queries"><a class="header" href="#planning-for-aggregate-queries">Planning for Aggregate Queries</a></h2>
-<p>As you can see, the SQL query planner is relatively complex and the code for parsing aggregate queries is quite involved. If you are interested in learning more, please refer to the source code.</p>
+<h2 id="规划聚合查询"><a class="header" href="#规划聚合查询">规划聚合查询</a></h2>
+<p>如你所见，SQL查询规划器相对复杂，解析聚合查询的代码也颇多。如果你对此感兴趣，请参阅源代码。</p>
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 
