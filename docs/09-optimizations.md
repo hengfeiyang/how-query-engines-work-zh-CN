@@ -12,9 +12,9 @@ _本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygro
 
 基于规则的优化是一种将常识性优化应用于查询计划的简单实用的方法。尽管基于规则的优化也可以应用于物理计划，但这些优化通常在创建物理计划之前针对逻辑计划执行。
 
-The optimizations work by walking through the logical plan using the visitor pattern and creating a copy of each step in the plan with any necessary modifications applied. This is a much simpler design than attempting to mutate state while walking the plan and is well aligned with a functional programming style that prefers immutable state.
+优化的工作原理是使用访问者模式遍历逻辑计划，并创建计划中每个步骤的副本并应用任何必要的修改。这是一个比在执行计划时尝试改变状态要简单得多的设计，并且与喜欢不可变状态的函数式编程风格非常一致。
 
-We will use the following interface to represent optimizer rules.
+我们将使用以下接口来表示优化器规则。 
 
 ```kotlin
 interface OptimizerRule {
@@ -22,13 +22,13 @@ interface OptimizerRule {
 }
 ```
 
-We will now look at some common optimization rules that most query engines implement.
+现在我们将了解大多数查询引擎实现的一些常见优化规则。
 
-### Projection Push-Down
+### 映射下推 Projection Push-Down
 
-The goal of the projection push-down rule is to filter out columns as soon as possible after reading data from disk and before other phases of query execution, to reduce the amount of data that is kept in memory (and potentially transfered over the network in the case of distributed queries) between operators.
+映射下推规则的目标是在从磁盘读取数据之后和查询执行的其他阶段之前尽快过滤掉列，以减少操作符之间保留在内存中（以及在分布式场景下可能通过网络传输）的数据量。
 
-In order to know which columns are referenced in a query, we must write recursive code to examine expressions and build up a list of columns.
+为了知道查询中引用了哪些列，我们必须编写递归代码来检查表达式并构建列列表。
 
 ```kotlin
 fun extractColumns(expr: List<LogicalExpr>,
@@ -60,7 +60,7 @@ fun extractColumns(expr: LogicalExpr,
 }
 ```
 
-With this utility code in place, we can go ahead and implement the optimizer rule. Note that for the `Projection`, `Selection`, and `Aggregate` plans we are building up the list of column names, but when we reach the `Scan` (which is a leaf node) we replace it with a version of the scan that has the list of column names used elsewhere in the query.
+有了这个实用的代码，我们就可以继续实施优化器规则。请注意，对于 `Projection`、`Selection` 和 `Aggregate` 计划，我们正在构建列名列表，但当我们到达 `Scan`（它是一个叶节点）时，我们将其替换为在查询中其他地方使用的列名列表的扫描版本。 
 
 ```kotlin
 class ProjectionPushDownRule : OptimizerRule {
@@ -96,7 +96,7 @@ class ProjectionPushDownRule : OptimizerRule {
 }
 ```
 
-Given this input logical plan:
+给定这个输入逻辑计划：
 
 ```
 Projection: #id, #first_name, #last_name
@@ -104,7 +104,7 @@ Projection: #id, #first_name, #last_name
     Scan: employee; projection=None
 ```
 
-This optimizer rule will transform it to the following plan.
+该优化器规则会将其转换为以下计划。
 
 ```
 Projection: #id, #first_name, #last_name
@@ -112,9 +112,9 @@ Projection: #id, #first_name, #last_name
     Scan: employee; projection=[first_name, id, last_name, state]
 ```
 
-### Predicate Push-Down
+### 断言下推 Predicate Push-Down
 
-The Predicate Push-Down optimization aims to filter out rows as early as possible within a query, to avoid redundant processing. Consider the following which joins an `employee` table and `dept` table and then filters on employees based in Colorado.
+断言下推优化的目的是在查询中尽早过滤掉行，以避免冗余处理。考虑以下内容，联接 `employee` 表和 `dept` 表，然后过滤位于科罗拉多州（Colorado）的员工。
 
 ```
 Projection: #dept_name, #first_name, #last_name
@@ -124,7 +124,7 @@ Projection: #dept_name, #first_name, #last_name
       Scan: dept; projection=[id, dept_name]
 ```
 
-The query will produce the correct results but will have the overhead of performing the join for all employees and not just those employees that are based in Colorado. The predicate push-down rule would push the filter down into the join as shown in the following query plan.
+该查询将产生正确的结果，但会有执行所有员工（而不仅仅是那些位于科罗拉多州的员工）联接操作所带来的开销。断言下推规则会将过滤器下推到联接中，如下查询计划所示。
 
 ```
 Projection: #dept_name, #first_name, #last_name
@@ -134,20 +134,20 @@ Projection: #dept_name, #first_name, #last_name
     Scan: dept; projection=[id, dept_name]
 ```
 
-The join will now only process a subset of employees, resulting in better performance.
+联表现在将仅处理一部分员工，从而获得更好的性能。
 
-### Eliminate Common Subexpressions
+### 消除公共子表达式 Eliminate Common Subexpressions
 
-Given a query such as `SELECT sum(price * qty) as total_price, sum(price * qty * tax_rate) as total_tax FROM ...`, we can see that the expression `price * qty` appears twice. Rather than perform this computation twice, we could choose to re-write the plan to compute it once.
+给定一个查询如 `SELECT sum(price * qty) as total_price, sum(price * qty * tax_rate) as total_tax FROM ...`，我们可以看到表达式 `price * qty` 出现了两次，我们可以选择重写计划只计算一次，而不是执行两次计算。。
 
-Original plan:
+原始计划：
 
 ```
 Projection: sum(#price * #qty), sum(#price * #qty * #tax)
   Scan: sales
 ```
 
-Optimized plan:
+优化后的计划：
 
 ```
 Projection: sum(#_price_mult_qty), sum(#_price_mult_qty * #tax)
@@ -155,11 +155,11 @@ Projection: sum(#_price_mult_qty), sum(#_price_mult_qty * #tax)
     Scan: sales
 ```
 
-### Converting Correlated Subqueries to Joins
+### 将相关子查询转换为联表 Converting Correlated Subqueries to Joins
 
-Given a query such as `SELECT id FROM foo WHERE EXISTS (SELECT * FROM bar WHERE foo.id = bar.id)`, a simple implementation would be to scan all rows in `foo` and then perform a lookup in `bar` for each row in `foo`. This would be extremely inefficient, so query engines typically translate correlated subqueries into joins. This is also known as subquery decorrelation.
+给定一个查询如 `SELECT id FROM foo WHERE EXISTS (SELECT * FROM bar WHERE foo.id = bar.id)`，一个简单的实现可能是扫描 `foo` 中的所有行，然后对 `bar` 中查找每一行。这将非常低效，所以查询引擎通常会把相关子查询转化为联表操作。这也被称为子查询去关联。
 
-This query can be rewritten as `SELECT foo.id FROM foo JOIN bar ON foo.id = bar.id`.
+此查询可以改写为 `SELECT foo.id FROM foo JOIN bar ON foo.id = bar.id`.
 
 ```
 Projection: foo.id
@@ -168,7 +168,7 @@ Projection: foo.id
     TableScan: bar projection=[id]
 ```
 
-If the query is modified to use `NOT EXISTS` rather than `EXISTS` then the query plan would use a `LeftAnti` rather than `LeftSemi` join.
+如果查询被修改为使用 `NOT EXISTS` 而不是 `EXISTS`，那么查询计划将使用 `LeftAnti` 而不是 `LeftSemi` 联接。
 
 ```
 Projection: foo.id
@@ -177,13 +177,13 @@ Projection: foo.id
     TableScan: bar projection=[id]
 ```
 
-## Cost-Based Optimizations
+## 基于成本的优化 Cost-Based Optimizations
 
-Cost-based optimization refers to optimization rules that use statistics about the underlying data to determine a cost of executing a particular query and then choose an optimal execution plan by looking for one with a low cost. Good examples would be choosing which join algorithm to use, or choosing which order tables should be joined in, based on the sizes of the underlying tables.
+基于成本的优化是指利用底层数据的统计信息来确定执行特定查询的成本，然后通过寻找成本较低的执行计划来选择最佳执行计划的优化规则。一个好的例子是根据基础表的大小选择要使用的联接算法，或者选择联接表的顺序。
 
-One major drawback to cost-based optimizations is that they depend on the availability of accurate and detailed statistics about the underlying data. Such statistics would typically include per-column statistics such as the number of null values, number of distinct values, min and max values, and histograms showing the distribution of values within the column. The histogram is essential to be able to detect that a predicate such as `state = 'CA'` is likely to produce more rows than `state = 'WY'` for example (California is the most populated US state, with 39 million residents, and Wyoming is the least populated state, with fewer than 1 million residents).
+基于成本的优化的一个主要缺点是它们依赖于相关底层数据的准确且详细的统计数据的可用性。此类统计信息通常包括每列统计信息，例如空值的数量、不同值的数量、最小值和最大值以及显示列内值分布的直方图。直方图对于能够检测诸如 `state = 'CA'` 之类的断言可能产生比 `state = 'WY'` 更多的行至关重要，比如：（加利福尼亚州是美国人口最多的州，有 3900 万居民，而怀俄明州是人口最少的州，不到 100 万居民）。
 
-When working with file formats such as Orc or Parquet, some of these statistics are available, but generally it is necessary to run a process to build these statistics, and when working with multiple terabytes of data, this can be prohibitive, and outweigh the benefit, especially for ad-hoc queries.
+当处理 Orc 或 Parquet 等文件格式时，其中一些统计信息是可用的，但通常需要运行一个进程来构建这些统计信息，而当处理 TB 级别的数据时，这可能会令人望而却步，并且得不偿失，特别是对于临时查询。
 
 *这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
