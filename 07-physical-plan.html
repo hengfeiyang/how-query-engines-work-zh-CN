@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">译者注</a></li><li class="chapter-item expanded "><a href="00-acknowledgments.html"><strong aria-hidden="true">1.</strong> 致谢</a></li><li class="chapter-item expanded "><a href="00-introduction.html"><strong aria-hidden="true">2.</strong> 简介</a></li><li class="chapter-item expanded "><a href="01-what-is-a-query-engine.html"><strong aria-hidden="true">3.</strong> 什么是查询引擎？</a></li><li class="chapter-item expanded "><a href="02-apache-arrow.html"><strong aria-hidden="true">4.</strong> Apache Arrow</a></li><li class="chapter-item expanded "><a href="03-type-system.html"><strong aria-hidden="true">5.</strong> 类型系统</a></li><li class="chapter-item expanded "><a href="04-data-sources.html"><strong aria-hidden="true">6.</strong> 数据源</a></li><li class="chapter-item expanded "><a href="05-logical-plan.html"><strong aria-hidden="true">7.</strong> 逻辑计划</a></li><li class="chapter-item expanded "><a href="06-dataframe.html"><strong aria-hidden="true">8.</strong> 数据帧</a></li><li class="chapter-item expanded "><a href="07-physical-plan.html" class="active"><strong aria-hidden="true">9.</strong> 物理计划</a></li><li class="chapter-item expanded "><a href="08-query-planner.html"><strong aria-hidden="true">10.</strong> 查询规划器</a></li><li class="chapter-item expanded "><a href="09-optimizations.html"><strong aria-hidden="true">11.</strong> 查询优化器</a></li><li class="chapter-item expanded "><a href="10-execution.html"><strong aria-hidden="true">12.</strong> 查询执行</a></li><li class="chapter-item expanded "><a href="11-sql-support.html"><strong aria-hidden="true">13.</strong> SQL 支持</a></li><li class="chapter-item expanded "><a href="12-parallel-query.html"><strong aria-hidden="true">14.</strong> 执行并行查询</a></li><li class="chapter-item expanded "><a href="13-distributed-query.html"><strong aria-hidden="true">15.</strong> 执行分布式查询</a></li><li class="chapter-item expanded "><a href="14-testing.html"><strong aria-hidden="true">16.</strong> 测试</a></li><li class="chapter-item expanded "><a href="15-benchmarks.html"><strong aria-hidden="true">17.</strong> 基准测试</a></li><li class="chapter-item expanded "><a href="16-further-resources.html"><strong aria-hidden="true">18.</strong> 更多资源</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">译者注</a></li><li class="chapter-item expanded affix "><a href="00-acknowledgments.html">致谢</a></li><li class="chapter-item expanded affix "><a href="00-introduction.html">简介</a></li><li class="chapter-item expanded "><a href="01-what-is-a-query-engine.html"><strong aria-hidden="true">1.</strong> 什么是查询引擎？</a></li><li class="chapter-item expanded "><a href="02-apache-arrow.html"><strong aria-hidden="true">2.</strong> Apache Arrow</a></li><li class="chapter-item expanded "><a href="03-type-system.html"><strong aria-hidden="true">3.</strong> 类型系统</a></li><li class="chapter-item expanded "><a href="04-data-sources.html"><strong aria-hidden="true">4.</strong> 数据源</a></li><li class="chapter-item expanded "><a href="05-logical-plan.html"><strong aria-hidden="true">5.</strong> 逻辑计划</a></li><li class="chapter-item expanded "><a href="06-dataframe.html"><strong aria-hidden="true">6.</strong> 数据帧</a></li><li class="chapter-item expanded "><a href="07-physical-plan.html" class="active"><strong aria-hidden="true">7.</strong> 物理计划</a></li><li class="chapter-item expanded "><a href="08-query-planner.html"><strong aria-hidden="true">8.</strong> 查询规划器</a></li><li class="chapter-item expanded "><a href="09-optimizations.html"><strong aria-hidden="true">9.</strong> 查询优化器</a></li><li class="chapter-item expanded "><a href="10-execution.html"><strong aria-hidden="true">10.</strong> 查询执行</a></li><li class="chapter-item expanded "><a href="11-sql-support.html"><strong aria-hidden="true">11.</strong> SQL 支持</a></li><li class="chapter-item expanded "><a href="12-parallel-query.html"><strong aria-hidden="true">12.</strong> 执行并行查询</a></li><li class="chapter-item expanded "><a href="13-distributed-query.html"><strong aria-hidden="true">13.</strong> 执行分布式查询</a></li><li class="chapter-item expanded "><a href="14-testing.html"><strong aria-hidden="true">14.</strong> 测试</a></li><li class="chapter-item expanded "><a href="15-benchmarks.html"><strong aria-hidden="true">15.</strong> 基准测试</a></li><li class="chapter-item expanded "><a href="16-further-resources.html"><strong aria-hidden="true">16.</strong> 更多资源</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -193,7 +193,7 @@
   fun children(): List&lt;PhysicalPlan&gt;
 }
 </code></pre>
-<h2 id="物理表达式physical-expressions"><a class="header" href="#物理表达式physical-expressions">物理表达式（Physical Expressions）</a></h2>
+<h2 id="物理表达式-physical-expressions"><a class="header" href="#物理表达式-physical-expressions">物理表达式 Physical Expressions</a></h2>
 <p>我们已经定义了逻辑计划中引用的逻辑表达式，但现在需要实现包含代码的物理表达式类，以在运行时计算表达式。</p>
 <p>每个逻辑表达式可以有多个物理表达式实现。例如，对于将两个数字相加的逻辑表达式 <code>AddExpr</code>，我们可以有一种使用 CPU 的实现和一种使用 GPU 的实现。查询规划器可以根据运行代码的服务器的硬件能力来选择使用哪一个。</p>
 <p>物理表达式是针对 记录批次（record batches）进行计算的，其结果是列。</p>
@@ -202,7 +202,7 @@
   fun evaluate(input: RecordBatch): ColumnVector
 }
 </code></pre>
-<h3 id="列表达式column-expressions"><a class="header" href="#列表达式column-expressions">列表达式（Column Expressions）</a></h3>
+<h3 id="列表达式-column-expressions"><a class="header" href="#列表达式-column-expressions">列表达式 Column Expressions</a></h3>
 <p><code>Column</code> 表达式简单地求值为对正在处理的 <code>RecordBatch</code> 中的 <code>ColumnVector</code> 的引用。<code>Column</code> 的逻辑表达式通过名称引用输入，这对编写查询来说是用户友好的，但对于物理表达式，我们希望避免每次评估表达式时都进行名称查找的成本，因此它改为通过索引引用列。</p>
 <pre><code class="language-kotlin">class ColumnExpression(val i: Int) : Expression {
 
@@ -215,7 +215,7 @@
   }
 }
 </code></pre>
-<h3 id="字面量表达式literal-expressions"><a class="header" href="#字面量表达式literal-expressions">字面量表达式（Literal Expressions）</a></h3>
+<h3 id="字面量表达式-literal-expressions"><a class="header" href="#字面量表达式-literal-expressions">字面量表达式 Literal Expressions</a></h3>
 <p>字面量表达式的物理实现就是一个包装在类中的字面值，该类实现了相应特性并为列中每个索引提供相同的值。</p>
 <pre><code class="language-kotlin">class LiteralValueVector(
     val arrowType: ArrowType,
@@ -264,7 +264,7 @@ class LiteralStringExpression(val value: String) : Expression {
   }
 }
 </code></pre>
-<h3 id="二元表达式binary-expressions"><a class="header" href="#二元表达式binary-expressions">二元表达式（Binary Expressions）</a></h3>
+<h3 id="二元表达式-binary-expressions"><a class="header" href="#二元表达式-binary-expressions">二元表达式 Binary Expressions</a></h3>
 <p>对于二元表达式，我们需要计算左右输入表达式，然后根据这些输入值计算特定的二元运算符，因此我们可以提供一个基类来简化每个运算符的实现。</p>
 <pre><code class="language-kotlin">abstract class BinaryExpression(val l: Expression, val r: Expression) : Expression {
   override fun evaluate(input: RecordBatch): ColumnVector {
@@ -282,7 +282,7 @@ class LiteralStringExpression(val value: String) : Expression {
   abstract fun evaluate(l: ColumnVector, r: ColumnVector) : ColumnVector
 }
 </code></pre>
-<h3 id="比较表达式comparison-expressions"><a class="header" href="#比较表达式comparison-expressions">比较表达式（Comparison Expressions）</a></h3>
+<h3 id="比较表达式-comparison-expressions"><a class="header" href="#比较表达式-comparison-expressions">比较表达式 Comparison Expressions</a></h3>
 <p>比较表达式只是简单地比较两个输入列中的所有值并生成包含结果的新列（位向量 bit vector）。</p>
 <p>以下是相等运算符的一个例子。</p>
 <pre><code class="language-kotlin">class EqExpression(l: Expression,
@@ -303,7 +303,7 @@ class LiteralStringExpression(val value: String) : Expression {
   }
 }
 </code></pre>
-<h3 id="数学表达式math-expressions"><a class="header" href="#数学表达式math-expressions">数学表达式（Math Expressions）</a></h3>
+<h3 id="数学表达式-math-expressions"><a class="header" href="#数学表达式-math-expressions">数学表达式 Math Expressions</a></h3>
 <p>数学表达式的实现与比较表达式的代码非常相似。一个基类可以用于所有数学表达式。</p>
 <pre><code class="language-kotlin">abstract class MathExpression(l: Expression,
                               r: Expression): BinaryExpression(l,r) {
@@ -344,7 +344,7 @@ class LiteralStringExpression(val value: String) : Expression {
   }
 }
 </code></pre>
-<h3 id="聚合表达式aggregate-expressions"><a class="header" href="#聚合表达式aggregate-expressions">聚合表达式（Aggregate Expressions）</a></h3>
+<h3 id="聚合表达式-aggregate-expressions"><a class="header" href="#聚合表达式-aggregate-expressions">聚合表达式 Aggregate Expressions</a></h3>
 <p>到目前为止，我们所研究的表达式都是从每个批次中的一列或多列输入生成一个输出列。聚合表达式会更复杂，因为它们聚合多批数据中的值，然后生成一个最终值，因此我们需要引入累加器的概念，每个聚合表达式的物理表示需要知道如何为查询引擎生成适当的累加器来传递输入数据。</p>
 <p>以下是表示聚合表达式和累加器的主要接口。</p>
 <pre><code class="language-kotlin">interface AggregateExpression {
@@ -407,9 +407,9 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h2 id="物理计划physical-plans"><a class="header" href="#物理计划physical-plans">物理计划（Physical Plans）</a></h2>
+<h2 id="物理计划-physical-plans"><a class="header" href="#物理计划-physical-plans">物理计划 Physical Plans</a></h2>
 <p>有了物理表达式之后，我们现在可以为查询引擎将支持各种转换实现物理计划了。</p>
-<h3 id="扫描scan"><a class="header" href="#扫描scan">扫描（Scan）</a></h3>
+<h3 id="扫描-scan"><a class="header" href="#扫描-scan">扫描 Scan</a></h3>
 <p><code>扫描（Scan）</code> 执行计划只是委派给数据源，传入一个 映射（Projection）来限制加载到内存中的列。不执行附加逻辑。</p>
 <pre><code class="language-kotlin">class ScanExec(val ds: DataSource, val projection: List&lt;String&gt;) : PhysicalPlan {
 
@@ -431,7 +431,7 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h3 id="映射projection"><a class="header" href="#映射projection">映射（Projection）</a></h3>
+<h3 id="映射-projection"><a class="header" href="#映射-projection">映射 Projection</a></h3>
 <p>映射（Projection）执行计划只是根据输入列评估映射（Projection）表达式，然后生成包含派生列的记录批次（record batch）。请注意，对于按名称引用现有列的映射（Projection）表达式的情况，派生列只是对输入列的指针或引用，因此不会复制底层数据。</p>
 <pre><code class="language-kotlin">class ProjectionExec(
     val input: PhysicalPlan,
@@ -458,7 +458,7 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h3 id="筛选也称为过滤器selection-also-known-as-filter"><a class="header" href="#筛选也称为过滤器selection-also-known-as-filter">筛选（也称为过滤器）（Selection (also known as Filter)）</a></h3>
+<h3 id="筛选也称为过滤器-selection-also-known-as-filter"><a class="header" href="#筛选也称为过滤器-selection-also-known-as-filter">筛选（也称为过滤器） Selection (also known as Filter)</a></h3>
 <p>筛选执行计划是第一个重要的计划，因为它具有条件逻辑来确定输入记录批次中的哪些行应包含在输出批次中。</p>
 <p>对于每个输入批次，筛选表达式被执行以返回一个位向量（bit vector），其中包含表示表达式布尔结果的位，每行一位。然后使用该位向量过滤输入列以生成新的输出列。这是一种简单实现，可以针对位向量包含全 1 或全 0 的情况进行优化，以避免将数据复制到新向量的开销。</p>
 <pre><code class="language-kotlin">class SelectionExec(
@@ -505,7 +505,7 @@ interface Accumulator {
   }
 }
 </code></pre>
-<h3 id="哈希聚合hash-aggregate"><a class="header" href="#哈希聚合hash-aggregate">哈希聚合（Hash Aggregate）</a></h3>
+<h3 id="哈希聚合-hash-aggregate"><a class="header" href="#哈希聚合-hash-aggregate">哈希聚合 Hash Aggregate</a></h3>
 <p>哈希聚合计划（HashAggregate）比以前的计划更复杂，因为它必须处理所有传入批次并维护累加器的 HashMap 并更新正在处理的每一行的累加器。最后，利用累加器结果创建一个包含聚合查询结果的记录批次（record batch）。</p>
 <pre><code class="language-kotlin">class HashAggregateExec(
     val input: PhysicalPlan,
@@ -590,7 +590,7 @@ interface Accumulator {
 
 }
 </code></pre>
-<h3 id="联表join"><a class="header" href="#联表join">联表（Join）</a></h3>
+<h3 id="联表-join"><a class="header" href="#联表-join">联表 Join</a></h3>
 <p>顾名思义，Join 运算符连接两个关系中的行。有许多不同类型的具有不同的语义 Join：</p>
 <ul>
 <li><code>[INNER] JOIN</code>: 这是最常用的联表类型，创建一个包含来自左右输入的行的新关系行。当连接表达式仅包含左右输入的列之间的相等比较时，该连接称为“等连接”。等连接的一个例子是 <code>SELECT * FROM customer JOIN orders ON customer.id = order.customer_id</code>。</li>
@@ -601,9 +601,9 @@ interface Accumulator {
 <li><code>CROSS JOIN</code>: 交叉连接返回左输入中的行与右输入中的行的所有可能组合。如果左侧输入包含 100 行，右侧输入包含 200 行，则将返回 20,000 行。这称为笛卡尔积。</li>
 </ul>
 <p>KQuery 尚未实现 Join 运算符。</p>
-<h3 id="子查询subqueries"><a class="header" href="#子查询subqueries">子查询（Subqueries）</a></h3>
+<h3 id="子查询-subqueries"><a class="header" href="#子查询-subqueries">子查询 Subqueries</a></h3>
 <p>子查询是查询中的查询。它们可以是相关的，也可以是不相关的（涉及或不涉及其他关系的联接）。当子查询返回单一值时，它被称为标量子查询。</p>
-<h4 id="标量子查询scalar-subqueries"><a class="header" href="#标量子查询scalar-subqueries">标量子查询（Scalar subqueries）</a></h4>
+<h4 id="标量子查询-scalar-subqueries"><a class="header" href="#标量子查询-scalar-subqueries">标量子查询 Scalar subqueries</a></h4>
 <p>标量子查询返回单个值，并且可以在许多可以使用字面量的 SQL 表达式中使用。</p>
 <p><em>下面是相关性标量子查询的一个例子：</em></p>
 <p><code>SELECT id, name, (SELECT count(*) FROM orders WHERE customer_id = customers.id) AS num_orders FROM customers</code></p>
