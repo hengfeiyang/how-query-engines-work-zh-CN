@@ -1,14 +1,14 @@
 # 查询执行
 
-We are now able to write code to execute optimized queries against CSV files.
+我们现在能够编写代码来对 CSV 文件执行优化的查询。
 
-Before we execute the query with KQuery, it might be useful to use a trusted alternative so that we know what the correct results should be and to get some baseline performance metrics for comparison.
+在使用 KQuery 执行查询之前，使用可信替代方案可能会很有用，这样我们就知道正确的结果应该是什么，并获取一些基线性能指标以供比较。
 
 ## Apache Spark 示例
 
 _本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `spark` 模块中找到。_
 
-First, we need to create a Spark context. Note that we are using a single thread for execution so that we can make a relatively fair comparison to the performance of the single threaded implementation in KQuery.
+首先，我们需要创建一个 Spark 上下文。请注意，我们使用单线程执行，以便我们可以与 KQuery 中单线程实现的性能进行相对公平的比较。
 
 ```scala
 val spark = SparkSession.builder()
@@ -16,7 +16,7 @@ val spark = SparkSession.builder()
   .getOrCreate()
 ```
 
-Next, we need to register the CSV file as a DataFrame against the context.
+接下来，我们需要根据上下文将 CSV 文件注册为 DataFrame。
 
 ```scala
 val schema = StructType(Seq(
@@ -47,7 +47,7 @@ val tripdata = spark.read.format("csv")
 tripdata.createOrReplaceTempView("tripdata")
 ```
 
-Finally, we can go ahead and execute SQL against the DataFrame.
+最后，我们可以开始针对 DataFrame 执行 SQL。
 
 ```scala
 val start = System.currentTimeMillis()
@@ -64,7 +64,7 @@ val duration = System.currentTimeMillis() - start
 println(s"Query took $duration ms")
 ```
 
-Executing this code on my desktop produces the following output.
+在我的桌面电脑上执行此代码会生成以下输出。
 
 ```
 [1,623259.86]
@@ -80,11 +80,11 @@ Executing this code on my desktop produces the following output.
 Query took 14418 ms
 ```
 
-## KQuery Examples
+## KQuery 示例
 
-_The source code discussed in this chapter can be found in the `examples` module of the[ KQuery project](https://github.com/andygrove/how-query-engines-work)._
+_本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `examples` 模块中找到。_
 
-Here is the equivalent query implemented with KQuery. Note that this code differs from the Spark example because KQuery doesn't have the option of specifying the schema of the CSV file yet, so all data types are strings, and this means that we need to add an explicit cast to the query plan to convert the `fare_amount` column to a numeric type.
+这是使用 KQuery 实现的等效查询。请注意，此代码与 Spark 示例不同，因为 KQuery 还没有指定 CSV 文件结构的选项，因此所有数据类型都是字符串，这意味着我们需要向查询计划添加显式转换以将 `fare_amount` 列转换为数字类型。
 
 ```kotlin
 val time = measureTimeMillis {
@@ -104,7 +104,7 @@ results.forEach { println(it.toCSV()) }
 println("Query took $time ms")
 ```
 
-This produces the following output on my desktop.
+在我的桌面电脑上会生成以下输出。
 
 ```
 Schema<passenger_count: Utf8, MAX: FloatingPoint(DOUBLE)>
@@ -122,11 +122,11 @@ Schema<passenger_count: Utf8, MAX: FloatingPoint(DOUBLE)>
 Query took 6740 ms
 ```
 
-We can see that the results match those produced by Apache Spark. We also see that the performance is respectable for this size of input. It is very likely that Apache Spark will outperform KQuery with larger data sets since it is optimized for "Big Data".
+我们可以看到结果与 Apache Spark 生成的结果相匹配。我们还发现，对于这种大小的输入，性能相当不错。Apache Spark 在处理更大的数据集时很可能会优于 KQuery，因为它针对“大数据”进行了优化。
 
-## Removing The Query Optimizer
+## 删除查询优化器
 
-Let's remove the optimizations and see how much they helped with performance.
+让我们删除优化，看看它们对性能有多大帮助。
 
 ```kotlin
 val time = measureTimeMillis {
@@ -145,7 +145,7 @@ results.forEach { println(it.toCSV()) }
 println("Query took $time ms")
 ```
 
-This produces the following output on my desktop.
+在我的桌面电脑上会生成以下输出。
 
 ```
 1,623259.86
@@ -162,7 +162,7 @@ This produces the following output on my desktop.
 Query took 36090 ms
 ```
 
-The results are the same, but the query took about five times as long to execute. This clearly shows the benefit of the projection push-down optimization that was discussed in the previous chapter.
+结果是相同的，但查询的执行时间大约是原来的五倍。这清楚地显示了前一章讨论的映射下推优化的好处。
 
 *这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
