@@ -22,7 +22,7 @@ interface PhysicalPlan {
 }
 ```
 
-## 物理表达式（Physical Expressions）
+## 物理表达式 Physical Expressions
 
 我们已经定义了逻辑计划中引用的逻辑表达式，但现在需要实现包含代码的物理表达式类，以在运行时计算表达式。
 
@@ -38,7 +38,7 @@ interface Expression {
 }
 ```
 
-### 列表达式（Column Expressions）
+### 列表达式 Column Expressions
 
 `Column` 表达式简单地求值为对正在处理的 `RecordBatch` 中的 `ColumnVector` 的引用。`Column` 的逻辑表达式通过名称引用输入，这对编写查询来说是用户友好的，但对于物理表达式，我们希望避免每次评估表达式时都进行名称查找的成本，因此它改为通过索引引用列。
 
@@ -55,7 +55,7 @@ class ColumnExpression(val i: Int) : Expression {
 }
 ```
 
-### 字面量表达式（Literal Expressions）
+### 字面量表达式 Literal Expressions
 
 字面量表达式的物理实现就是一个包装在类中的字面值，该类实现了相应特性并为列中每个索引提供相同的值。
 
@@ -111,7 +111,7 @@ class LiteralStringExpression(val value: String) : Expression {
 }
 ```
 
-### 二元表达式（Binary Expressions）
+### 二元表达式 Binary Expressions
 
 对于二元表达式，我们需要计算左右输入表达式，然后根据这些输入值计算特定的二元运算符，因此我们可以提供一个基类来简化每个运算符的实现。
 
@@ -133,7 +133,7 @@ abstract class BinaryExpression(val l: Expression, val r: Expression) : Expressi
 }
 ```
 
-### 比较表达式（Comparison Expressions）
+### 比较表达式 Comparison Expressions
 
 比较表达式只是简单地比较两个输入列中的所有值并生成包含结果的新列（位向量 bit vector）。
 
@@ -159,7 +159,7 @@ class EqExpression(l: Expression,
 }
 ```
 
-### 数学表达式（Math Expressions）
+### 数学表达式 Math Expressions
 
 数学表达式的实现与比较表达式的代码非常相似。一个基类可以用于所有数学表达式。
 
@@ -208,7 +208,7 @@ class AddExpression(l: Expression,
 }
 ```
 
-### 聚合表达式（Aggregate Expressions）
+### 聚合表达式 Aggregate Expressions
 
 到目前为止，我们所研究的表达式都是从每个批次中的一列或多列输入生成一个输出列。聚合表达式会更复杂，因为它们聚合多批数据中的值，然后生成一个最终值，因此我们需要引入累加器的概念，每个聚合表达式的物理表示需要知道如何为查询引擎生成适当的累加器来传递输入数据。
  
@@ -282,11 +282,11 @@ class MaxAccumulator : Accumulator {
 }
 ```
 
-## 物理计划（Physical Plans）
+## 物理计划 Physical Plans
 
 有了物理表达式之后，我们现在可以为查询引擎将支持各种转换实现物理计划了。
 
-### 扫描（Scan）
+### 扫描 Scan
 
 `扫描（Scan）` 执行计划只是委派给数据源，传入一个 映射（Projection）来限制加载到内存中的列。不执行附加逻辑。
 
@@ -312,7 +312,7 @@ class ScanExec(val ds: DataSource, val projection: List<String>) : PhysicalPlan 
 }
 ```
 
-### 映射（Projection）
+### 映射 Projection
 
 映射（Projection）执行计划只是根据输入列评估映射（Projection）表达式，然后生成包含派生列的记录批次（record batch）。请注意，对于按名称引用现有列的映射（Projection）表达式的情况，派生列只是对输入列的指针或引用，因此不会复制底层数据。
 
@@ -343,7 +343,7 @@ class ProjectionExec(
 }
 ```
 
-### 筛选（也称为过滤器）（Selection (also known as Filter)）
+### 筛选（也称为过滤器） Selection (also known as Filter)
 
 筛选执行计划是第一个重要的计划，因为它具有条件逻辑来确定输入记录批次中的哪些行应包含在输出批次中。
 
@@ -395,7 +395,7 @@ class SelectionExec(
 }
 ```
 
-### 哈希聚合（Hash Aggregate）
+### 哈希聚合 Hash Aggregate
 
 哈希聚合计划（HashAggregate）比以前的计划更复杂，因为它必须处理所有传入批次并维护累加器的 HashMap 并更新正在处理的每一行的累加器。最后，利用累加器结果创建一个包含聚合查询结果的记录批次（record batch）。
 
@@ -484,7 +484,7 @@ class HashAggregateExec(
 }
 ```
 
-### 联表（Join）
+### 联表 Join
 
 顾名思义，Join 运算符连接两个关系中的行。有许多不同类型的具有不同的语义 Join：
 
@@ -497,11 +497,11 @@ class HashAggregateExec(
 
 KQuery 尚未实现 Join 运算符。
 
-### 子查询（Subqueries）
+### 子查询 Subqueries
 
 子查询是查询中的查询。它们可以是相关的，也可以是不相关的（涉及或不涉及其他关系的联接）。当子查询返回单一值时，它被称为标量子查询。
 
-#### 标量子查询（Scalar subqueries）
+#### 标量子查询 Scalar subqueries
 
 标量子查询返回单个值，并且可以在许多可以使用字面量的 SQL 表达式中使用。
 

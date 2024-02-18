@@ -2,15 +2,15 @@
 
 _本章所讨论的源代码可以在 [KQuery 项目](https://github.com/andygrove/how-query-engines-work) 的 `optimizer` 模块中找到。_
 
-We now have functional query plans, but we rely on the end-user to construct the plans in an efficient way. For example, we expect the user to construct the plan so that filters happen as early as possible, especially before joins, since this limits the amount of data that needs to be processed.
+我们现在有了功能性的查询计划，但是我们依赖于终端用户以高效的方式构建这些计划。例如，我们期望用户能够构建出尽早进行过滤操作的计划，特别是在联表之前，因为这可以限制需要处理的数据量。
 
-This is a good time to implement a simple rules-based query optimizer that can re-arrange the query plan to make it more efficient.
+现在是实现一个简单的基于规则的查询优化器的好时机，它可以重新排列查询计划使其更加高效。
 
-This is going to become even more important once we start supporting SQL in chapter eleven, because the SQL language only defines how the query should work and does not always allow the user to specify the order that operators and expressions are evaluated in.
+一旦我们在第十一章开始支持 SQL，这一点将变得更加重要，因为 SQL 语言仅定义查询应如何工作，并不总是允许用户指定运算符和表达式的计算顺序。
 
-## Rule-Based Optimizations
+## 基于规则的优化 Rule-Based Optimizations
 
-Rule based optimizations are a simple and pragmatic approach to apply common sense optimizations to a query plan. These optimizations are typically executed against the logical plan before the physical plan is created, although rule-based optimizations can also be applied to physical plans.
+基于规则的优化是一种将常识性优化应用于查询计划的简单实用的方法。尽管基于规则的优化也可以应用于物理计划，但这些优化通常在创建物理计划之前针对逻辑计划执行。
 
 The optimizations work by walking through the logical plan using the visitor pattern and creating a copy of each step in the plan with any necessary modifications applied. This is a much simpler design than attempting to mutate state while walking the plan and is well aligned with a functional programming style that prefers immutable state.
 

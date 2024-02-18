@@ -26,7 +26,7 @@ fun createPhysicalExpr(expr: LogicalExpr,
 
 以下部分将解释每种类型表达式的实现。
 
-### 列表达式（Column Expressions）
+### 列表达式 Column Expressions
 
 逻辑列表达式按名称引用列，但物理表达式使用列索引来提高性能，因此查询规划器需要执行从列名到列索引的转换，并在列名无效时抛出异常。
 
@@ -41,7 +41,7 @@ is Column -> {
   ColumnExpression(i)
 ```
 
-### 字面量表达式（Literal Expressions）
+### 字面量表达式 Literal Expressions
 
 字面量的物理表达式很简单，从逻辑表达式到物理表达式的映射很简单，因为我们需要复制字面值。
 
@@ -51,7 +51,7 @@ is LiteralDouble -> LiteralDoubleExpression(expr.n)
 is LiteralString -> LiteralStringExpression(expr.str)
 ```
 
-### 二元表达式（Binary Expressions）
+### 二元表达式 Binary Expressions
 
 要为二元表达式创建物理表达式，我们首先需要为左右输入创建物理表达式，然后需要创建特定的物理表达式。
 
@@ -97,7 +97,7 @@ fun createPhysicalPlan(plan: LogicalPlan) : PhysicalPlan {
 }
 ```
 
-### 扫描（Scan）
+### 扫描 Scan
 
 转换扫描计划只需复制数据源引用和逻辑计划的映射。
 
@@ -105,7 +105,7 @@ fun createPhysicalPlan(plan: LogicalPlan) : PhysicalPlan {
 is Scan -> ScanExec(plan.dataSource, plan.projection)
 ```
 
-### 映射（Projection）
+### 映射 Projection
 
 转换映射有两个步骤。首先，我们需要为映射的输入创建一个物理计划，然后我们需要将映射的逻辑表达式转换为物理表达式。
 
@@ -118,7 +118,7 @@ is Projection -> {
 }
 ```
 
-### 筛选（也称为过滤器）（Selection (also known as Filter)）
+### 筛选（也称为过滤器） Selection (also known as Filter)
 
 `Selection` 的查询规划步骤与 `Projection` 非常相似。
 
@@ -130,7 +130,7 @@ is Selection -> {
 }
 ```
 
-### 聚合（Aggregate）
+### 聚合 Aggregate
 
 聚合查询的查询规划步骤涉及计算定义可选 分组键（grouping keys）的表达式和计算作为聚合函数的输入的表达式，然后创建物理聚合表达式。
 

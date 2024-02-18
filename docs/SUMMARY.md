@@ -1,8 +1,8 @@
 # Summary
 
 [译者注](./README.md)
-- [致谢](./00-acknowledgments.md)
-- [简介](./00-introduction.md)
+[致谢](./00-acknowledgments.md)
+[简介](./00-introduction.md)
 - [什么是查询引擎？](./01-what-is-a-query-engine.md)
 - [Apache Arrow](./02-apache-arrow.md)
 - [类型系统](./03-type-system.md)
