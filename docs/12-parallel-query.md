@@ -1,16 +1,16 @@
 # 执行并发查询
 
-So far, we have been using a single thread to execute queries against individual files. This approach is not very scalable, because queries will take longer to run with larger files or with multiple files. The next step is to implement distributed query execution so that query execution can utilize multiple CPU cores and multiple servers.
+到目前为止，我们一直使用单个线程来对单个文件执行查询。这种方法的可扩展性不是很强，因为对于较大的文件或多个文件，查询将需要更长的时间来运行。下一步是实现分布式查询执行，以便查询执行可以利用多个CPU核心和多个服务器。
 
-The simplest form of distributed query execution is parallel query execution utilizing multiple CPU cores on a single node using threads.
+分布式查询执行的最简单形式是使用线程在单个节点上利用多个 CPU 核心并行查询执行。
 
-The NYC taxi data set is already conveniently partitioned because there is one CSV file for each month of each year, meaning that there are twelve partitions for the 2019 data set, for example. The most straightforward approach to parallel query execution would be to use one thread per partition to execute the same query in parallel and then combine the results. Suppose this code is running on a computer with six CPU cores with hyper-threading support. In that case, these twelve queries should execute in the same elapsed time as running one of the queries on a single thread, assuming that each month has a similar amount of data.
+纽约市出租车数据集已经方便地进行分区，因为每年每个月都有一个 CSV 文件，这意味着例如 2019 年数据集有 12 个分区。并行查询执行的最直接方法是每个分区使用一个线程并行执行相同的查询，然后合并结果。假设此代码运行在有六个 CPU 核心且支持超线程的计算机上。在这种情况下，假设每个月都有相似的数据量，那么这 12 个查询的执行时间应该与在单个线程上运行其中一个查询的时间相同。
 
-Here is an example of running an aggregate SQL query in parallel across twelve partitions. This example is implemented using Kotlin coroutines, rather than using threads directly.
+以下是在 12 个分区并行运行聚合 SQL 查询的示例。本示例是使用 Kotlin 协程实现的，而不是直接使用线程。
 
-The source code for this example can be found at `jvm/examples/src/main/kotlin/ParallelQuery.kt` in the KQuery GitHub repository.
+此示例的源代码可以在 KQuery GitHub 仓库的 `jvm/examples/src/main/kotlin/ParallelQuery.kt` 中找到。
 
-Let us start with the single-threaded code for running one query against one partition.
+让我们从针对一个分区运行一个查询的单线程代码开始。
 
 ```kotlin
 fun executeQuery(path: String, month: Int, sql: String): List<RecordBatch> {
@@ -23,7 +23,7 @@ fun executeQuery(path: String, month: Int, sql: String): List<RecordBatch> {
 }
 ```
 
-With this in place, we can now write the following code to run this query in parallel across each of the twelve partitions of data.
+有了这个，我们现在可以编写以下代码来并行运行 12 个分区数据的查询。
 
 ```kotlin
 val start = System.currentTimeMillis()
@@ -49,7 +49,7 @@ val duration = System.currentTimeMillis() - start
 println("Collected ${results.size} batches in $duration ms")
 ```
 
-Here is the output from this example, running on a desktop computer with *24 cores*.
+这是在一台具有 *24核心* 的桌面电脑上运行此示例的输出结果。
 
 ```
 Query against month 8 took 17074 ms
@@ -67,15 +67,15 @@ Query against month 4 took 25439 ms
 Collected 12 batches in 25505 ms
 ```
 
-As you can see, the total duration was around the same time as the slowest query.
+如你所见，总持续时间与最慢查询的时间大致相同。
 
-Although we have successfully executed the aggregate query against the partitions, our result is a list of batches of data with duplicate values. For example, there will most likely be a result for `passenger_count=1` from each of the partitions.
+尽管我们已经成功地对分区执行了聚合查询，但我们的结果是具有重复值的批次数据的列表。例如，每个分区很可能都会产生`passenger_count=1` 的结果。
 
-## Combining Results
+## 合并结果
 
-For simple queries consisting of projection and selection operators, the results of the parallel queries can be combined (similar to a SQL `UNION ALL` operation), and no further processing is required. More complex queries involving aggregates, sorts, or joins will require a secondary query to be run on the results of the parallel queries to combine the results. The terms "map" and "reduce" are often used to explain this two-step process. The "map" step refers to running one query in parallel across the partitions, and the "reduce" step refers to combining the results into a single result.
+对于由映射和选择运算符组成的简单查询，可以组合并行查询的结果（类似于SQL `UNION ALL` 操作），并且不需要进一步处理。涉及聚合、排序或联表的更复杂的查询将需要对并行查询的结果运行辅助查询以合并结果。术语 “map” 和 “reduce” 经常用来解释这个两步过程。 “map” 步骤是指跨分区并行运行一个查询，“reduce” 步骤是指将结果合并为单个结果。
 
-For this particular example, it is now necessary to run a secondary aggregation query almost identical to the aggregate query executed against the partitions. One difference is that the second query may need to apply different aggregate functions. For the aggregate functions `min`, `max`, and `sum`, the same operation is used in the map and reduce steps, to get the min of the min or the sum of the sums. For the count expression, we do not want the count of the counts. We want to see the sum of the counts instead.
+对于这个特定的示例，现在需要运行与针对分区执行的聚合查询几乎相同的辅助聚合查询。一个区别是第二个查询可能需要应用不同的聚合函数。对于聚合函数 `min`、`max` 和 `sum` 在映射和归约步骤中使用相同的操作，以获得最小值的最小值或总和的总和。对于计数表达式，我们不需要计数结果的数量。我们希望看到所有计数的总和。
 
 ```kotlin
 val sql = "SELECT passenger_count, " +
@@ -89,7 +89,7 @@ val df = ctx.sql(sql)
 ctx.execute(df).forEach { println(it) }
 ```
 
-This produces the final result set:
+这会产生最终结果集： 
 
 ```
 1,671123.14
@@ -104,19 +104,19 @@ This produces the final result set:
 0,90000.0
 ```
 
-## Smarter Partitioning
+## 更智能的分区
 
-Although the strategy of using one thread per file worked well in this example, it does not work as a general-purpose approach to partitioning. If a data source has thousands of small partitions, starting one thread per partition would be inefficient. A better approach would be for the query planner to decide how to share the available data between a specified number of worker threads (or executors).
+尽管每个文件使用一个线程的策略在此示例中效果很好，但它不能作为一种通用的分区方法。如果一个数据源有数千个小分区，那么每个分区启动一个线程将不会高效。更好的方法是让查询规划器决定如何在指定数量的工作线程（或执行器）之间共享可用数据。
 
-Some file formats already have a natural partitioning scheme within them. For example, Apache Parquet files consist of multiple "row groups" containing batches of columnar data. A query planner could inspect the available Parquet files, build a list of row groups and then schedule reading these row groups across a fixed number of threads or executors.
+某些文件格式已经天然具有分区方案。例如，Apache Parquet 文件由多个包含批量列式数据的 “行组” 组成。查询规划器可以检查可用的 Parquet 文件，构建行组列表，然后安排固定数量的线程或执行器读取这些行组。
 
-It is even possible to apply this technique to unstructured files such as CSV files, but this is not trivial. It is easy to inspect the file size and break the file into equal-sized chunks, but a record could likely span two chunks, so it is necessary to read backward or forwards from a boundary to find the start or end of the record. It is insufficient to look for a newline character because these often appear within records and are also used to delimit records. It is common practice to convert CSV files into a structured format such as Parquet early on in a processing pipeline to improve the efficiency of subsequent processing.
+甚至可以将此技术应用于非结构化文件（例如 CSV 文件），但这并非易事。检查文件大小并将文件分成大小相等的块很容易，但一条记录可能跨越两个块，因此有必要从边界向后或向前读取以找到记录的开头或结尾。查找换行符是不够的，因为它们经常出现在记录中，并且也用于分隔记录。通常的做法是在处理管道中尽早将 CSV 文件转换为结构化格式（例如 Parquet），以提高后续处理的效率。
 
-## Partition Keys
+## 分区键
 
-One solution to this problem is to place files in directories and use directory names consisting of key-value pairs to specify the contents.
+解决这个问题的一种方法是将文件放在目录中，并使用由键值对组成的目录名称来指定内容。
 
-For example, we could organize the files as follows:
+例如，我们可以按如下方式组织文件：
 
 ```
 /mnt/nyxtaxi/csv/year=2019/month=1/tripdata.csv
@@ -125,13 +125,13 @@ For example, we could organize the files as follows:
 /mnt/nyxtaxi/csv/year=2019/month=12/tripdata.csv
 ```
 
-Given this structure, the query planner could now implement a form of "predicate push down" to limit the number of partitions included in the physical query plan. This approach is often referred to as "partition pruning".
+有了这个结构，查询计划程序现在可以实现一种 “谓词下推（predicate push down）” 形式，以限制物理查询计划中包含的分区数量。这种方法通常称为“分区修剪（partition pruning）”。
 
-## Parallel Joins
+## 并发联表
 
-When performing an inner join with a single thread, a simple approach is to load one side of the join into memory and then scan the other side, performing lookups against the data stored in memory. This classic Hash Join algorithm is efficient if one side of the join can fit into memory.
+当用单线程执行内连接时，一个简单的方法是将连接的一侧加载到内存中，然后扫描另一侧，在内存中存储的数据上进行查找。如果连接的一方能够装入内存，则此经典哈希连接算法非常高效。
 
-The parallel version of this is known as a Partitioned Hash Join or Parallel Hash Join. It involves partitioning both inputs based on the join keys and performing a classic Hash Join on each pair of input partitions.
+其并行版本称为分区哈希连接或并行哈希连接。它涉及根据连接键对两个输入进行分区，并对每对输入分区执行经典的哈希连接。
 
 *这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
