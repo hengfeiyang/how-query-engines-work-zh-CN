@@ -180,74 +180,74 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="执行分布式查询"><a class="header" href="#执行分布式查询">执行分布式查询</a></h1>
-<p>The previous section on Parallel Query Execution covered some fundamental concepts such as partitioning, which we will build on in this section.</p>
-<p>To somewhat over-simplify the concept of distributed query execution, the goal is to be able to create a physical query plan which defines how work is distributed to a number of "executors" in a cluster. Distributed query plans will typically contain new operators that describe how data is exchanged between executors at various points during query execution.</p>
-<p>In the following sections we will explore how different types of plans are executed in a distributed environment and then discuss building a distributed query scheduler.</p>
-<h2 id="embarrassingly-parallel-operators"><a class="header" href="#embarrassingly-parallel-operators">Embarrassingly Parallel Operators</a></h2>
-<p>Certain operators can run in parallel on partitions of data without any significant overhead when running in a distributed environment. The best examples of these are Projection and Filter. These operators can be applied in parallel to each input partition of the data being operated on and produce a corresponding output partition for each one. These operators do not change the partitioning scheme of the data.</p>
+<p>上一节有关并行查询执行的内容介绍了一些基本概念，例如分区，我们将在本节中进一步展开。</p>
+<p>为了简化分布式查询执行的概念，其目标是能够创建一个物理查询计划，该计划定义了如何将工作分配给集群中的多个“执行器”。分布式查询计划通常会包含新的操作符，这些操作符描述了在查询执行过程中各个点上数据如何在执行器之间交换。</p>
+<p>在接下来的部分中，我们将探讨不同类型的计划如何在分布式环境中执行，然后讨论构建一个分布式查询调度器。</p>
+<h2 id="令人尴尬的并行运算符"><a class="header" href="#令人尴尬的并行运算符">令人尴尬的并行运算符</a></h2>
+<p>在分布式环境中运行时，某些运算符可以在数据分区上并行运行，而几乎不产生任何显著开销。其中最好的例子是映射（Projection）和过滤（Filter）。这些运算符可以并行应用于正在操作的数据的每个输入分区，并为每个分区生成相应的输出分区。这些运算符不会更改数据的分区方案。</p>
 <p><img src="images/distributed_project_filter.png" alt="distributed project filter" /></p>
-<h2 id="distributed-aggregates"><a class="header" href="#distributed-aggregates">Distributed Aggregates</a></h2>
-<p>Let's use the example SQL query that we used in the previous chapter on Parallel Query Execution and look at the distributed planning implications of an aggregate query.</p>
+<h2 id="分布式聚合"><a class="header" href="#分布式聚合">分布式聚合</a></h2>
+<p>让我们使用上一章并行查询执行中使用的示例 SQL 查询，看看聚合查询的分布式计划含义。</p>
 <pre><code class="language-sql">SELECT passenger_count, MAX(max_fare)
 FROM tripdata
 GROUP BY passenger_count
 </code></pre>
-<p>We can execute this query in parallel on all partitions of the <code>tripdata</code> table, with each executor in the cluster processing a subset of these partitions. However, we need to then combine all the resulting aggregated data onto a single node and then apply the final aggregate query so that we get a single result set without duplicate grouping keys (<code>passenger_count</code> in this case). Here is one possible logical query plan for representing this. Note the new <code>Exchange</code> operator which represents the exchange of data between executors. The physical plan for the exchange could be implemented by writing intermediate results to shared storage, or perhaps by streaming data directly to other executors.</p>
+<p>我们可以在 <code>tripdata</code> 表的所有分区上并行地执行此查询，集群中的每个执行器处理这些分区的子集。但是，我们需要将所有生成的聚合数据组合到单个节点上，然后应用最终的聚合查询，以便我们获得没有重复分组键的单个结果集（<code>passenger_count</code> 在本例中）。这是表示这一点的一种可能的逻辑查询计划。请注意 <code>newExchange</code> 运算符，它代表执行器之间的数据交换。交换的物理计划可以通过将中间结果写入共享存储来实现，或者可以通过将数据直接流式传输到其他执行器来实现。</p>
 <pre><code>HashAggregate: groupBy=[passenger_count], aggr=[MAX(max_fare)]
   Exchange:
     HashAggregate: groupBy=[passenger_count], aggr=[MAX(max_fare)]
       Scan: tripdata.parquet
 </code></pre>
-<p>Here is a diagram showing how this query could be executed in a distributed environment:</p>
+<p>下图显示了如何在分布式环境中执行此查询：</p>
 <p><img src="images/distributed_agg.png" alt="distributed agg" /></p>
-<h2 id="distributed-joins"><a class="header" href="#distributed-joins">Distributed Joins</a></h2>
-<p>Joins are often the most expensive operation to perform in a distributed environment. The reason for this is that we need to make sure that we organize the data in such a way that both input relations are partitioned on the join keys. For example, if we joining a <code>customer</code> table to an <code>order</code> table where the join condition is <code>customer.id = order.customer_id</code>, then all the rows in both tables for a specific customer must be processed by the same executor. To achieve this, we have to first repartition both tables on the join keys and write the partitions to disk. Once this has completed then we can perform the join in parallel with one join for each partition. The resulting data will remain partitioned by the join keys. This particular join algorithm is called a partitioned hash join. The process of repartitioning the data is known as performing a "shuffle".</p>
+<h2 id="分布式联表"><a class="header" href="#分布式联表">分布式联表</a></h2>
+<p>联表通常是分布式环境中执行成本最高的操作。原因是我们需要确保以这样的方式组织数据，即两个输入关系都在联表键上进行分区。例如，如果我们要将一个 <code>customer</code> 表连接到一个 <code>order</code>表 其联表条件为 <code>customer.id = order.customer_id</code>，那么两个表中针对特定客户的所有行必须由同一个执行器处理。为了实现这一点，我们必须首先在联表键上对两个表进行重新分区，并将分区写入磁盘。一旦完成，我们就可以并行执行联表，每个分区执行一个连接。结果数据将保持按联表键分区。这种特殊的联表算法称为分区哈希联表。重新分区数据的过程称为执行 “shuffle”。</p>
 <p><img src="images/distributed_join.png" alt="distributed join" /></p>
-<h2 id="distributed-query-scheduling"><a class="header" href="#distributed-query-scheduling">Distributed Query Scheduling</a></h2>
-<p>Distributed query plans are fundamentally different to in-process query plans because we can't just build a tree of operators and start executing them. The query now requires co-ordination across executors which means that we now need to build a scheduler.</p>
-<p>At a high level, the concept of a distributed query scheduler is not complex. The scheduler needs to examine the whole query and break it down into stages that can be executed in isolation (usually in parallel across the executors) and then schedule these stages for execution based on the available resources in the cluster. Once each query stage completes then any subsequent dependent query stages can be scheduled. This process repeats until all query stages have been executed.</p>
-<p>The scheduler could also be responsible for managing the compute resources in the cluster so that extra executors can be started on demand to handle the query load.</p>
-<p>In the remainder of this chapter, we will discuss the following topics, referring to Ballista and the design that is being implemented in that project.</p>
+<h2 id="分布式查询调度"><a class="header" href="#分布式查询调度">分布式查询调度</a></h2>
+<p>分布式查询计划与进程内查询计划有着根本的不同，因为我们不能仅仅构建一个运算符树并开始执行它们。查询现在需要跨执行器进行协调，这意味着我们现在需要构建一个调度器。</p>
+<p>从高层次来看，分布式查询调度器的概念并不复杂。调度器需要检查整个查询并将其分解为可以独立执行的阶段（通常在执行器之间并行），然后根据集群中的可用资源调度这些阶段的执行。每个查询阶段完成后，就可以安排任何后续的相关查询阶段。重复此过程直到执行完所有查询阶段。</p>
+<p>调度器还可以负责管理集群中的计算资源，以便可以根据需要启动额外的执行程序来处理查询负载。</p>
+<p>在本章的剩余部分中，我们将讨论以下主题，参考 <code>Ballista</code> 以及该项目中正在实施的设计：</p>
 <ul>
-<li>Producing a distributed query plan</li>
-<li>Serializing query plans and exchanging them with executors</li>
-<li>Exchange intermediate results between executors</li>
-<li>Optimizing distributed queries</li>
+<li>生成一个分布式查询计划</li>
+<li>序列化查询计划并与执行器交换</li>
+<li>在各个执⾏器之间交换中间结果</li>
+<li>优化分布式查询</li>
 </ul>
-<h2 id="producing-a-distributed-query-plan"><a class="header" href="#producing-a-distributed-query-plan">Producing a Distributed Query Plan</a></h2>
-<p>As we have seen in the previous examples, some operators can run in parallel on input partitions and some operators require data to be repartitioned. These changes in partitioning are key to planning a distributed query. Changes in partitioning within a plan are sometimes called pipeline breakers and these changes in partitioning define the boundaries between query stages.</p>
-<p>We will now use the following SQL query to see how this process works.</p>
+<h2 id="生成一个分布式查询计划"><a class="header" href="#生成一个分布式查询计划">生成一个分布式查询计划</a></h2>
+<p>正如我们在前面的示例中所看到的，某些运算符可以在输入分区上并行运行，而某些运算符则需要对数据进行重新分区。这些分区的变化是规划分布式查询的关键。计划内部的分区变化有时被称为管道断路器，这些分区的变化定义了查询阶段之间的边界。</p>
+<p>我们现在将使用以下 SQL 查询来查看此过程是如何工作的。</p>
 <pre><code class="language-sql">SELECT customer.id, sum(order.amount) as total_amount
 FROM customer JOIN order ON customer.id = order.customer_id
 GROUP BY customer.id
 </code></pre>
-<p>The physical (non-distributed) plan for this query would look something like this:</p>
+<p>该查询的物理（非分布式）计划如下所示：</p>
 <pre><code>Projection: #customer.id, #total_amount
   HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
     Join: condition=[customer.id = order.customer_id]
       Scan: customer
       Scan: order
 </code></pre>
-<p>Assuming that the customer and order tables are not already partitioned on customer id, we will need to schedule execution of the first two query stages to repartition this data. These two query stages can run in parallel.</p>
+<p>假设 <code>customer</code>表 和 <code>order</code> 表尚未根据 <code>customer_id</code> 进行分区，我们需要安排前两个查询阶段的执行来重新分区该数据。这两个查询阶段可以并行运行。</p>
 <pre><code>Query Stage #1: repartition=[customer.id]
   Scan: customer
 Query Stage #2: repartition=[order.customer_id]
   Scan: order
 </code></pre>
-<p>Next, we can schedule the join, which will run in parallel for each partition of the two inputs. The next operator after the join is the aggregate, which is split into two parts; the aggregate that runs in parallel and then the final aggregate that requires a single input partition. We can perform the parallel part of this aggregate in the same query stage as the join because this first aggregate does not care how the data is partitioned. This gives us our third query stage, which can now be scheduled for execution. The output of this query stage remains partitioned by customer id.</p>
+<p>接下来，我们可以安排联表，该联表将为两个输入的每个分区并行运行。联表后的下一个运算符是聚合，它分为两部分；并行运行的聚合，然后是需要单个输入分区的最终聚合。我们可以在与联表相同的查询阶段执行此聚合的并行部分，因为第一个聚合不关心数据如何分区。这给了我们第三个查询阶段，现在可以安排执行。此查询阶段的输出仍然按 <code>customer_id</code> 分区。</p>
 <pre><code>Query Stage #3: repartition=[]
   HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
     Join: condition=[customer.id = order.customer_id]
       Query Stage #1
       Query Stage #2
 </code></pre>
-<p>The final query stage performs the aggregate of the aggregates, reading from all of the partitions from the previous stage.</p>
+<p>最后的查询阶段执行聚合的聚合，从前一阶段的所有分区中读取。</p>
 <pre><code>Query Stage #4:
   Projection: #customer.id, #total_amount
     HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
       QueryStage #3
 </code></pre>
-<p>To recap, here is the full distributed query plan showing the query stages that are introduced when data needs to be repartitioned or exchanged between pipelined operations.</p>
+<p>回顾一下，这里是完整的分布式查询计划，显示了当数据需要在管道操作之间重新分区或交换时引入的查询阶段。</p>
 <pre><code>Query Stage #4:
   Projection: #customer.id, #total_amount
     HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
@@ -259,12 +259,12 @@ Query Stage #2: repartition=[order.customer_id]
             Query Stage #2: repartition=[order.customer_id]
               Scan: order
 </code></pre>
-<h2 id="serializing-a-query-plan"><a class="header" href="#serializing-a-query-plan">Serializing a Query Plan</a></h2>
-<p>The query scheduler needs to send fragments of the overall query plan to executors for execution.</p>
-<p>There are a number of options for serializing a query plan so that it can be passed between processes. Many query engines choose the strategy of using the programming languages native serialization support, which is a suitable choice if there is no requirement to be able to exchange query plans between different programming languages and this is usually the simplest mechanism to implement.</p>
-<p>However, there are advantages in using a serialization format that is programming language-agnostic. Ballista uses Google's <a href="https://developers.google.com/protocol-buffers">Protocol Buffers</a> format to define query plans. The project is typically abbreviated as "protobuf".</p>
-<p>Here is a subset of the Ballista protocol buffer definition of a query plan.</p>
-<p>Full source code can be found at <code>proto/ballista.proto</code> in the Ballista github repository.</p>
+<h2 id="序列化查询计划"><a class="header" href="#序列化查询计划">序列化查询计划</a></h2>
+<p>查询调度器需要将整个查询计划的片段发送给执行器来执行。</p>
+<p>有许多选项可用于序列化查询计划，以便它可以在进程之间传递。许多查询引擎选择使用编程语言本身序列化支持的策略，如果不需要能够在不同编程语言之间交换查询计划，那么这是一个合适的选择，并且这通常是最简单的实现机制。</p>
+<p>但是，使用与编程语言无关的序列化格式有一些优点。<code>Ballista</code> 使用 Google 的 <a href="https://developers.google.com/protocol-buffers">Protocol Buffers</a> 格式来定义查询计划。该项目通常缩写为 “protobuf”。</p>
+<p>以下是查询计划的 <code>Ballista</code> 协议缓冲区定义的子集。</p>
+<p>完整的源代码可以在 Ballista github 存储库中 <code>proto/ballista.proto</code> 文件中找到。</p>
 <pre><code class="language-protobuf">message LogicalPlanNode {
   LogicalPlanNode input = 1;
   FileNode file = 10;
@@ -297,51 +297,51 @@ message LimitNode {
   uint32 limit = 1;
 }
 </code></pre>
-<p>The protobuf project provides tools for generating language-specific source code for serializing and de-serializing data.</p>
-<h2 id="serializing-data"><a class="header" href="#serializing-data">Serializing Data</a></h2>
-<p>Data must also be serialized as it is streamed between clients and executors and between executors.</p>
-<p>Apache Arrow provides an IPC (Inter-process Communication) format for exchanging data between processes. Because of the standardized memory layout provided by Arrow, the raw bytes can be transferred directly between memory and an input/output device (disk, network, etc) without the overhead typically associated with serialization. This is effectively a zero copy operation because the data does not have to be transformed from its in-memory format to a separate serialization format.</p>
-<p>However, the metadata about the data, such as the schema (column names and data types) does need to be encoded using <a href="https://google.github.io/flatbuffers/">Google Flatbuffers</a>. This metadata is small and is typically serialized once per result set or per batch so the overhead is small.</p>
-<p>Another advantage of using Arrow is that it provides very efficient exchange of data between different programming languages.</p>
-<p>Apache Arrow IPC defines the data encoding format but not the mechanism for exchanging it. Arrow IPC could be used to transfer data from a JVM language to C or Rust via JNI for example.</p>
-<h2 id="choosing-a-protocol"><a class="header" href="#choosing-a-protocol">Choosing a Protocol</a></h2>
-<p>Now that we have chosen serialization formats for query plans and data, the next question is how do we exchange this data between distributed processes.</p>
-<p>Apache Arrow provides a <a href="https://arrow.apache.org/blog/2019/10/13/introducing-arrow-flight/">Flight protocol</a> which is intended for this exact purpose. Flight is a new general-purpose client-server framework to simplify high performance transport of large datasets over network interfaces.</p>
-<p>The Arrow Flight libraries provide a development framework for implementing a service that can send and receive data streams. A Flight server supports several basic kinds of requests:</p>
+<p>protobuf 项目提供了用于生成特定于语言的源代码以序列化和反序列化数据的工具。</p>
+<h2 id="序列化数据"><a class="header" href="#序列化数据">序列化数据</a></h2>
+<p>当数据在客户端和执行器之间以及执行器之间传输时，数据也必须被序列化。</p>
+<p>Apache Arrow 提供了一个 IPC（进程间通信）格式，用于在进程之间交换数据。由于 Arrow 提供的标准化内存布局，原始字节可以直接在内存与输入/输出设备（磁盘、网络等）之间传输，无需通常与序列化相关联的开销。这实际上是一种零拷贝操作，因为数据不必从其内存中的格式转换为单独的序列化格式。</p>
+<p>然而，关于数据的元数据，如 schema（列名和数据类型）确实需要使用 <a href="https://google.github.io/flatbuffers/">Google Flatbuffers</a> 进行编码。这些元数据很小，并且通常每个结果集或每批次只需序列化一次，所以开销很小。</p>
+<p>使用 Arrow 的另一个优势是它能够非常高效地在不同编程语言之间交换数据。</p>
+<p>Apache Arrow IPC 定义了数据编码格式但没有定义交换机制。例如，Arrow IPC 可以用来通过 JNI 将 JVM 语言中的数据传输到 C 或 Rust。</p>
+<h2 id="选择一个协议"><a class="header" href="#选择一个协议">选择一个协议</a></h2>
+<p>现在我们已经为查询计划和数据选择了序列化格式，下一个问题是如何在分布式进程之间交换这些数据。</p>
+<p>Apache Arrow 提供了一个 <a href="https://arrow.apache.org/blog/2019/10/13/introducing-arrow-flight/">Flight 协议</a> 专门用于此目的。Flight 是一个新型通用客户端-服务器框架, 旨在简化大型数据库集通过网络接口进行高性能传输。</p>
+<p>Arrow Flight 库提供了一个开发框架，用于实现可以发送和接收数据流的服务。 Flight 服务器支持几种基本类型的请求：</p>
 <ul>
-<li><strong>Handshake</strong>: a simple request to determine whether the client is authorized and, in some cases, to establish an implementation-defined session token to use for future requests</li>
-<li><strong>ListFlights</strong>: return a list of available data streams</li>
-<li><strong>GetSchema</strong>: return the schema for a data stream</li>
-<li><strong>GetFlightInfo</strong>: return an “access plan” for a dataset of interest, possibly requiring consuming multiple data streams. This request can accept custom serialized commands containing, for example, your specific application parameters.</li>
-<li><strong>DoGet</strong>: send a data stream to a client</li>
-<li><strong>DoPut</strong>: receive a data stream from a client</li>
-<li><strong>DoAction</strong>: perform an implementation-specific action and return any results, i.e. a generalized function call</li>
-<li><strong>ListActions</strong>: return a list of available action types</li>
+<li><strong>Handshake</strong>: 一个简单的请求，用于确定客户端是否获得授权，并且在某些情况下，建立一个实现定义的会话令牌以用于将来的请求</li>
+<li><strong>ListFlights</strong>: 返回可用数据流的列表</li>
+<li><strong>GetSchema</strong>: 返回数据流的结构</li>
+<li><strong>GetFlightInfo</strong>: 返回感兴趣的数据集的“访问计划”，可能需要使用多个数据流。此请求可以接受自定义序列化命令，其中包含例如您的特定应用程序参数。</li>
+<li><strong>DoGet</strong>: 向客户端发送数据流</li>
+<li><strong>DoPut</strong>: 从客户端接收数据流</li>
+<li><strong>DoAction</strong>: 执行特定于实现的操作并返回任何结果，即通用函数调用</li>
+<li><strong>ListActions</strong>: 返回可用操作类型的列表</li>
 </ul>
-<p>The <code>GetFlightInfo</code> method could be used to compile a query plan and return the necessary information for receiving the results, for example, followed by calls to <code>DoGet</code> on each executor to start receiving the results from the query.</p>
-<h2 id="streaming"><a class="header" href="#streaming">Streaming</a></h2>
-<p>It is important that results of a query can be made available as soon as possible and be streamed to the next process that needs to operate on that data, otherwise there would be unacceptable latency involved as each operation would have to wait for the previous operation to complete.</p>
-<p>However, some operations require all the input data to be received before any output can be produced. A sort operation is a good example of this. It isn't possible to completely sort a dataset until the whole data set has been received. The problem can be alleviated by increasing the number of partitions so that a large number of partitions are sorted in parallel and then the sorted batches can be combined efficiently using a merge operator.</p>
-<h2 id="custom-code"><a class="header" href="#custom-code">Custom Code</a></h2>
-<p>It is often necessary to run custom code as part of a distributed query or computation. For a single language query engine it is often possible to use the language's built-in serialization mechanism to transmit this code over the network at query execution time which is very convenient during development. Another approach is to publish compiled code to a repository so that it can be downloaded into a cluster at runtime. For JVM based systems, a maven repository could be used. A more general purpose approach is to package all runtime dependencies into a Docker image.</p>
-<p>The query plan needs to provide the necessary information to load the user code at runtime. For JVM based systems this could be a classpath and a class name. For C based systems, this could be the path to a shared object. In either case, the user code will need to implement some known API.</p>
-<h2 id="distributed-query-optimizations"><a class="header" href="#distributed-query-optimizations">Distributed Query Optimizations</a></h2>
-<p>Distributed query execution has a lot of overhead compared to parallel query execution on a single host and should only be used when there is benefit in doing so. I recommend reading the paper <a href="https://www.usenix.org/system/files/conference/hotos15/hotos15-paper-mcsherry.pdf">Scalability! But at what COST</a> for some interesting perspectives on this topic.</p>
-<p>Also, there are many ways to distribute the same query so how do we know which one to use?</p>
-<p>One answer is to build a mechanism to determine the cost of executing a particular query plan and then create some subset of all possible combinations of query plan for a given problem and determine which one is most efficient.</p>
-<p>There are many factors involved in computing the cost of an operation and there are different resource costs and limitations involved.</p>
+<p><code>GetFlightInfo</code> 方法可用于编译查询计划并返回接收结果所需的信息，例如，随后调用 <code>DoGet</code> 每个执行器以开始接收查询结果。</p>
+<h2 id="流"><a class="header" href="#流">流</a></h2>
+<p>重要的是，查询结果可以尽快可用，并流式传输到需要操作该数据的下一个进程，否则会出现不可接受的延迟，因为每个操作都必须等待前一个操作完成。</p>
+<p>然而，某些操作要求在产生任何输出之前需要接收所有输入数据。排序操作就是一个很好的例子。在收到整个数据集之前，不可能对数据集进行完全排序。可以通过增加分区数量来缓解该问题，以便对大量分区进行并行排序，然后可以使用合并运算符有效地组合排序后的批次。</p>
+<h2 id="自定义代码"><a class="header" href="#自定义代码">自定义代码</a></h2>
+<p>通常需要运行自定义代码作为分布式查询或计算的一部分。对于单一语言的查询引擎，通常可以使用该语言内置的序列化机制在查询执行时通过网络传输此代码，这在开发过程中非常方便。另一种方法是将编译后的代码发布到存储库，以便可以在运行时将其下载到集群中。对于基于 JVM 的系统，可以使用 Maven 存储库。更通用的方法是将所有运行时依赖项打包到 Docker 映像中。</p>
+<p>查询计划需要提供必要的信息以在运行时加载用户代码。对于基于 JVM 的系统，这可以是类路径和类名。对于基于 C 的系统，这可能是共享对象的路径。无论哪种情况，用户代码都需要实现一些已知的 API。</p>
+<h2 id="分布式查询优化"><a class="header" href="#分布式查询优化">分布式查询优化</a></h2>
+<p>与单个主机上的并行查询执行相比，分布式查询执行具有大量开销，并且仅应在这样做有好处时才使用. 我推荐阅读论文 <a href="https://www.usenix.org/system/files/conference/hotos15/hotos15-paper-mcsherry.pdf">Scalability! But at what COST</a> 来获取关于这个话题一些有趣视角.</p>
+<p>此外，有多种方法可以分发相同的查询，那么我们如何知道使用哪一种呢？</p>
+<p>一个答案是建立一种机制来确定执行特定查询计划的成本，然后针对给定问题创建查询计划所有可能组合的某个子集，并确定哪一个最有效。</p>
+<p>计算操作成本涉及许多因素，并且涉及不同的资源成本和限制。</p>
 <ul>
-<li><strong>Memory</strong>: We are typically concerned with availability of memory rather than performance. Processing data in memory is orders of magnitude faster than reading and writing to disk.</li>
-<li><strong>CPU</strong>: For workloads that are parallelizable, more CPU cores means better throughput.</li>
-<li><strong>GPU</strong>: Some operations are orders of magnitude faster on GPUs compared to CPUs.</li>
-<li><strong>Disk</strong>: Disks have finite read and write speeds and cloud vendors typically limit the number of I/O operations per second (IOPS). Different types of disk have different performance characteristics (spinning disk vs SSD vs NVMe).</li>
-<li><strong>Network</strong>: Distributed query execution involves streaming data between nodes. There is a throughput limitation imposed by the networking infrastructure.</li>
-<li><strong>Distributed Storage</strong>: It is very common for source data to be stored in a distributed file system (HDFS) or object store (Amazon S3, Azure Blob Storage) and there is a cost in transferring data between distributed storage and local file systems.</li>
-<li><strong>Data Size</strong>: The size of the data matters. When performing a join between two tables and data needs to be transferred over the network, it is better to transfer the smaller of the two tables. If one of the tables can fit in memory than a more efficient join operation can be used.</li>
-<li><strong>Monetary Cost</strong>: If a query can be computed 10% faster at 3x the cost, is it worth it? That is a question best answered by the user of course. Monetary costs are typically controlled by limiting the amount of compute resource that is available.</li>
+<li><strong>内存</strong>: 我们通常关心内存的可用性而不是性能。在内存中处理数据比读取和写入磁盘快几个数量级。</li>
+<li><strong>CPU</strong>: 对于可并行的工作负载，更多的CPU核心意味着更好的吞吐量。</li>
+<li><strong>GPU</strong>: 与 CPU 相比，GPU 上的某些操作要快几个数量级。</li>
+<li><strong>磁盘</strong>: 磁盘的读写速度有限，云供应商通常会限制每秒 I/O 操作数 (IOPS)。不同类型的磁盘具有不同的性能特征（HDD、SSD、NVMe）。</li>
+<li><strong>网络</strong>: 分布式查询执行涉及节点之间的流数据。网络基础设施存在吞吐量限制。</li>
+<li><strong>分布式存储</strong>: 源数据存储在分布式文件系统（HDFS）或对象存储（Amazon S3、Azure Blob 存储）中是很常见的，并且在分布式存储和本地文件系统之间传输数据存在成本。</li>
+<li><strong>数据大小</strong>: 数据的大小很重要。当在两个表之间执行联接并且需要通过网络传输数据时，最好传输两个表中较小的一个。如果其中一个表可以容纳在内存中，则可以使用更有效的联表操作。</li>
+<li><strong>金钱成本</strong>：果查询的计算速度可以提高 10%，而成本却增加 3 倍，那么值得吗？当然，这是用户最好回答的问题。通常通过限制可用计算资源量来控制金钱成本。</li>
 </ul>
-<p>Query costs can be computed upfront using an algorithm if enough information is known ahead of time about the data, such as how large the data is, the cardinality of the partition of join keys used in the query, the number of partitions, and so on. This all depends on certain statistics being available for the data set being queried.</p>
-<p>Another approach is to just start running a query and have each operator adapt based on the input data it receives. Apache Spark 3.0.0 introduced an Adaptive Query Execution feature that does just this.</p>
+<p>如果提前知道有关数据的足够信息，例如数据有多大、查询中使用的联表键分区的基数、分区数量等，则可以使用算法预先计算查询成本。这一切都取决于可用于正在查询的数据集的某些统计数据。</p>
+<p>另一种方法是直接开始运行查询并让每个运算符根据其接收到的输入数据进行调整。 Apache Spark 3.0.0 引入了自适应查询执行功能来实现此目的。</p>
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 
