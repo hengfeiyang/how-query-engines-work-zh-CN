@@ -223,7 +223,7 @@ GROUP BY customer.id
 </code></pre>
 <p>该查询的物理（非分布式）计划如下所示：</p>
 <pre><code>Projection: #customer.id, #total_amount
-  HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+  HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
     Join: condition=[customer.id = order.customer_id]
       Scan: customer
       Scan: order
@@ -236,7 +236,7 @@ Query Stage #2: repartition=[order.customer_id]
 </code></pre>
 <p>接下来，我们可以安排联表，该联表将为两个输入的每个分区并行运行。联表后的下一个运算符是聚合，它分为两部分；并行运行的聚合，然后是需要单个输入分区的最终聚合。我们可以在与联表相同的查询阶段执行此聚合的并行部分，因为第一个聚合不关心数据如何分区。这给了我们第三个查询阶段，现在可以安排执行。此查询阶段的输出仍然按 <code>customer_id</code> 分区。</p>
 <pre><code>Query Stage #3: repartition=[]
-  HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+  HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
     Join: condition=[customer.id = order.customer_id]
       Query Stage #1
       Query Stage #2
@@ -244,15 +244,15 @@ Query Stage #2: repartition=[order.customer_id]
 <p>最后的查询阶段执行聚合的聚合，从前一阶段的所有分区中读取。</p>
 <pre><code>Query Stage #4:
   Projection: #customer.id, #total_amount
-    HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+    HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
       QueryStage #3
 </code></pre>
 <p>回顾一下，这里是完整的分布式查询计划，显示了当数据需要在管道操作之间重新分区或交换时引入的查询阶段。</p>
 <pre><code>Query Stage #4:
   Projection: #customer.id, #total_amount
-    HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+    HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
       Query Stage #3: repartition=[]
-        HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+        HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
           Join: condition=[customer.id = order.customer_id]
             Query Stage #1: repartition=[customer.id]
               Scan: customer
