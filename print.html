@@ -2418,60 +2418,60 @@ fun `gteq doubles`() {
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="基准测试"><a class="header" href="#基准测试">基准测试</a></h1>
-<p>Each query engine is unique in terms of performance, scalability, and resource requirements, often with different trade-offs. It is important to have good benchmarks to understand the performance and scalability characteristics.</p>
-<h2 id="measuring-performance"><a class="header" href="#measuring-performance">Measuring Performance</a></h2>
-<p>Performance is often the simplest characteristic to measure and usually refers to the time it takes to perform a particular operation. For example, benchmarks can be built to measure the performance of specific queries or categories of query.</p>
-<p>Performance tests typically involve executing a query multiple times and measuring elapsed time.</p>
-<h2 id="measuring-scalability"><a class="header" href="#measuring-scalability">Measuring Scalability</a></h2>
-<p>Scalability can be an overloaded term and there are many different types of scalability. The term scalability generally refers to how performance varies with different values for some variable that affects performance.</p>
-<p>One example would be measuring scalability as total data size increases to discover how performance is impacted, when querying 10 GB of data versus 100 GB or 1 TB. A common goal is to demonstrate linear scalability, meaning that querying 100 GB of data should take 10 times as long as querying 10 GB of data. Linear scalability makes it easy for users to reason about expected behavior.</p>
-<p>Other examples of variables that affect performance are:</p>
+<p>每个查询引擎在性能、可扩展性和资源需求方面都是独一无二的，通常有不同的权衡。拥有良好的基准对于了解性能和可扩展性特征非常重要。</p>
+<h2 id="测量性能"><a class="header" href="#测量性能">测量性能</a></h2>
+<p>性能通常是最容易衡量的特征，通常指执行特定操作所需的时间。例如，可以构建基准测试来测量特定查询或类别查询的性能。</p>
+<p>性能测试通常涉及多次执行查询并测量耗时。</p>
+<h2 id="测量可扩展性"><a class="header" href="#测量可扩展性">测量可扩展性</a></h2>
+<p>可扩展性是一个含义繁多的术语，可扩展性有很多种类型。可扩展性这个术语通常是指性能如何随着影响性能的某些变量的不同值而变化。</p>
+<p>一个例子是通过增加总数据大小来测量可扩展性，以了解查询 10 GB 数据与查询 100 GB 或 1 TB 数据时性能受到的影响。一个常见目标是展示线性可扩展性，这意味着查询 100 GB 数据的时间应该是查询 10 GB 数据的 10 倍。线性可扩展性使用户可以轻松推断预期行为。</p>
+<p>影响性能的变量的其他示例包括：</p>
 <ul>
-<li>Number of concurrent users, requests, or queries.</li>
-<li>Number of data partitions.</li>
-<li>Number of physical disks.</li>
-<li>Number of cores.</li>
-<li>Number of nodes.</li>
-<li>Amount of RAM available.</li>
-<li>Type of hardware (Raspberry Pi versus Desktop, for example).</li>
+<li>并发用户、请求或查询的数量。</li>
+<li>数据分区的数量。</li>
+<li>物理磁盘的数量。</li>
+<li>CPU 核心数。</li>
+<li>节点数量。</li>
+<li>可用的内存容量。</li>
+<li>硬件类型（例如 Raspberry Pi 与台式机）。</li>
 </ul>
-<h2 id="concurrency"><a class="header" href="#concurrency">Concurrency</a></h2>
-<p>When measuring scalability based on number of concurrent requests, we are often more interested in throughput (total number of queries executed per period of time) rather than the duration of individual queries, although we typically would collect that information as well.</p>
-<h2 id="automation"><a class="header" href="#automation">Automation</a></h2>
-<p>Benchmarks are often very time-consuming to run and automation is essential so that the benchmarks can be run often, perhaps once per day or once per week, so that any performance regressions can be caught early.</p>
-<p>Automation is also important for ensuring that benchmarks are executed consistently and that results are collected with all relevant details that might be needed when analyzing the results.</p>
-<p>Here are some examples of the type of data that should be collected when executing benchmarks:</p>
-<h3 id="hardware-configuration"><a class="header" href="#hardware-configuration">Hardware Configuration</a></h3>
+<h2 id="并发"><a class="header" href="#并发">并发</a></h2>
+<p>当根据并发请求数目来衡量可伸缩能力时，我们往往更关注吞吐率（每单位时间内执行的总查询次数），而不是单个查询持续时间，尽管我们通常也会收集这些信息。</p>
+<h2 id="自动化"><a class="header" href="#自动化">自动化</a></h2>
+<p>基准测试通常非常耗时，因此自动化至关重要，以便基准测试可以经常运行，可能每天一次或每周一次，以便尽早发现任何性能下降。</p>
+<p>自动化对于确保基准测试的一致执行以及收集分析结果时可能需要的所有相关详细信息也非常重要。</p>
+<p>以下是执行基准测试时应收集的数据类型的一些示例：</p>
+<h3 id="硬件配置"><a class="header" href="#硬件配置">硬件配置</a></h3>
 <ul>
-<li>Type of hardware</li>
-<li>Number of CPU cores</li>
-<li>Available memory and disk space</li>
-<li>Operating system name and version</li>
+<li>硬件类型</li>
+<li>CPU 核心数</li>
+<li>可用内存和磁盘空间</li>
+<li>操作系统名称和版本</li>
 </ul>
-<h3 id="environment"><a class="header" href="#environment">Environment</a></h3>
+<h3 id="环境变量"><a class="header" href="#环境变量">环境变量</a></h3>
 <ul>
-<li>Environment variables (being careful not to leak secrets)</li>
+<li>环境变量（注意不要泄露秘密）</li>
 </ul>
-<h3 id="benchmark-configuration"><a class="header" href="#benchmark-configuration">Benchmark Configuration</a></h3>
+<h3 id="基准测试配置"><a class="header" href="#基准测试配置">基准测试配置</a></h3>
 <ul>
-<li>Version of benchmark software used</li>
-<li>Version of software under test</li>
-<li>Any configuration parameters or files</li>
-<li>Filenames of any data files being queried</li>
-<li>Data sizes and checksums for the data files</li>
-<li>Details about the query that was executed</li>
+<li>使用的基准测试软件版本</li>
+<li>被测软件版本</li>
+<li>任何配置参数或文件</li>
+<li>查询需要的任何数据文件的文件名</li>
+<li>数据文件的数据大小和校验和</li>
+<li>有关已执行查询的详细信息</li>
 </ul>
-<h3 id="benchmark-results"><a class="header" href="#benchmark-results">Benchmark Results</a></h3>
+<h3 id="基准测试结果"><a class="header" href="#基准测试结果">基准测试结果</a></h3>
 <ul>
-<li>Date/time benchmark was started</li>
-<li>Start time and end time for each query</li>
-<li>Error information for any failed queries</li>
+<li>基准测试开始的日期/时间</li>
+<li>每个查询的开始时间和结束时间</li>
+<li>任何失败查询的错误信息</li>
 </ul>
-<h2 id="comparing-benchmarks"><a class="header" href="#comparing-benchmarks">Comparing Benchmarks</a></h2>
-<p>It is important to compare benchmarks between releases of the software so that changes in performance characteristics are apparent and can be investigated further. Benchmarks produce a lot of data that is often hard to compare manually, so it can be beneficial to build tooling to help with this process.</p>
-<p>Rather than comparing two sets of performance data directly, tooling can perform a "diff" of the data and show percentage differences between two or more runs of the same benchmark. It is also useful to be able to produce charts showing multiple benchmark runs.</p>
-<h2 id="publishing-benchmark-results"><a class="header" href="#publishing-benchmark-results">Publishing Benchmark Results</a></h2>
-<p>Here is an example of some real benchmark results, comparing query execution time for the Rust and JVM executors in Ballista, compared to Apache Spark. Although it is clear from this data that the Rust executor is performing well, the benefit can be expressed much better by producing a chart.</p>
+<h2 id="比较基准"><a class="header" href="#比较基准">比较基准</a></h2>
+<p>比较软件不同版本之间的基准非常重要，这样性能特征的变化才能一目了然，并可以进一步研究。基准测试会产生大量数据，这些数据通常很难手动比较，因此构建工具来帮助完成此过程会大有裨益。</p>
+<p>工具可以对数据进行 “比较” 并显示同一基准测试的两次或多次运行之间的百分比差异，而不是直接比较两组性能数据。能够生成显示多次基准测试运行的图表也很有用。</p>
+<h2 id="发布基准测试结果"><a class="header" href="#发布基准测试结果">发布基准测试结果</a></h2>
+<p>以下是一些实际基准测试结果的示例，比较了 Ballista 中 Rust 和 JVM 执行器的查询执行时间，并与 Apache Spark 进行了比较。虽然从这些数据中可以清楚地看出 Rust 执行器的性能良好，但通过制作图表可以更好地表达其优势。</p>
 <div class="table-wrapper"><table><thead><tr><th>CPU Cores</th><th>Ballista Rust</th><th>Ballista JVM</th><th>Apache Spark</th></tr></thead><tbody>
 <tr><td>3</td><td>21.431</td><td>51.143</td><td>56.557</td></tr>
 <tr><td>6</td><td>9.855</td><td>26.002</td><td>30.184</td></tr>
@@ -2479,15 +2479,15 @@ fun `gteq doubles`() {
 <tr><td>12</td><td>5.435</td><td>17.529</td><td>18.281</td></tr>
 </tbody></table>
 </div>
-<p>Rather than chart the query execution times, it is often better to chart the throughput. In this case, throughput in terms of queries per minute can be calculated by dividing 60 seconds by the execution time. If a query takes 5 seconds to execute on a single thread, then it should be possible to run 12 queries per minute.</p>
-<p>Here is an example chart showing the scalability of throughput as the number of CPU cores increases.</p>
+<p>绘制吞吐量图表通常比绘制查询执行时间图表更好。在这种情况下，每分钟查询的吞吐量可以通过将 60 秒除以执行时间来计算。如果查询在单个线程上执行需要 5 秒，那么每分钟应该可以运行 12 个查询。</p>
+<p>下面是一个示例图表，显示了随着 CPU 核心数量的增加，吞吐量的可扩展性。</p>
 <p><img src="images/benchmark-result-0.2.5.svg" alt="benchmark result" /></p>
-<h2 id="transaction-processing-council-tpc-benchmarks"><a class="header" href="#transaction-processing-council-tpc-benchmarks">Transaction Processing Council (TPC) Benchmarks</a></h2>
-<p>The Transaction Processing Council is a consortium of database vendors that collaborate on creating and maintaining various database benchmark suites to allow for fair comparisons between vendor's systems. Current TPC member companies include Microsoft, Oracle, IBM, Hewlett Packard Enterprise, AMD, Intel, and NVIDIA.</p>
-<p>The first benchmark, TPC-A, was published in 1989 and other benchmarks have been created since then. TPC-C is a well known OLTP benchmark used when comparing traditional RDBMS databases, and TPC-H (discontinued) and TPC-DS are often used for measuring performance of "Big Data" query engines.</p>
-<p>TPC benchmarks are seen as the "gold standard" in the industry and are complex and time consuming to implement fully. Also, results for these benchmarks can only be published by TPC members and only after the benchmarks have been audited by the TPC. Taking TPC-DS as an example, the only companies to have ever published official results at the time of writing are Alibaba.com, H2C, SuperMicro, and Databricks.</p>
-<p>However, the TPC has a Fair Use policy that allows non-members to create unofficial benchmarks based on TPC benchmarks, as long as certain conditions are followed, such as prefixing any use of the term TPC with "derived from TPC". For example, "Performance of Query derived from TPC-DS Query 14". TPC Copyright Notice and License Agreements must also be maintained. There are also limitations on the types of metrics that can be published.</p>
-<p>Many open source projects simply measure the time to execute individual queries from the TPC benchmark suites and use this as a way to track performance over time and for comparison with other query engines.</p>
+<h2 id="tpc-基准测试"><a class="header" href="#tpc-基准测试">TPC 基准测试</a></h2>
+<p>Transaction Processing Council（TPC）是一个由数据库供应商组成的联盟，该联盟合作创建和维护各种数据库基准测试套件，以便对供应商的系统进行公平比较。目前，TPC 成员公司包括 Microsoft、Oracle、IBM、Hewlett Packard Enterprise、AMD、Intel 和 NVIDIA。</p>
+<p>第一个基准测试 TPC-A 于 1989 年发布，此后还创建了其他基准测试。TPC-C 是比较传统 RDBMS 数据库时使用的著名 OLTP 基准测试，而 TPC-H（已停用）和 TPC-DS 则经常用于测量“大数据”查询引擎的性能。</p>
+<p>TPC 基准测试被视为业界的“黄金标准”，全面实施起来既复杂又耗时。此外，这些基准测试的结果只能由 TPC 成员发布，并且必须经过 TPC 审核。以 TPC-DS 为例，截至撰写本文时，仅有阿里巴巴、H2C、SuperMicro 和 Databricks 发布了官方结果。</p>
+<p>但是，TPC 有一项公平使用政策，允许非成员基于 TPC 基准创建非官方基准，只要遵循某些条件即可，例如在任何使用 TPC 术语时都加上“源自 TPC”的前缀。例如，“源自 TPC-DS 查询 14 的查询性能”。还必须维护 TPC 版权声明和许可协议。可以发布的指标类型也有限制。</p>
+<p>许多开源项目只是测量 TPC 基准套件中单个查询的执行时间，并以此来跟踪一段时间内的性能并与其他查询引擎进行比较。</p>
 <p><em>这本书还可通过 <a href="https://leanpub.com/how-query-engines-work">https://leanpub.com/how-query-engines-work</a> 购买 ePub、MOBI 和 PDF格式版本。</em></p>
 <p><strong>Copyright © 2020-2023 Andy Grove. All rights reserved.</strong></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="更多资源"><a class="header" href="#更多资源">更多资源</a></h1>
