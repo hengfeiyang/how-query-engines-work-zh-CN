@@ -73,7 +73,7 @@ GROUP BY customer.id
 
 ```
 Projection: #customer.id, #total_amount
-  HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+  HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
     Join: condition=[customer.id = order.customer_id]
       Scan: customer
       Scan: order
@@ -92,7 +92,7 @@ Query Stage #2: repartition=[order.customer_id]
 
 ```
 Query Stage #3: repartition=[]
-  HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+  HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
     Join: condition=[customer.id = order.customer_id]
       Query Stage #1
       Query Stage #2
@@ -103,7 +103,7 @@ Query Stage #3: repartition=[]
 ```
 Query Stage #4:
   Projection: #customer.id, #total_amount
-    HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+    HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
       QueryStage #3
 ```
 
@@ -112,9 +112,9 @@ Query Stage #4:
 ```
 Query Stage #4:
   Projection: #customer.id, #total_amount
-    HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+    HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
       Query Stage #3: repartition=[]
-        HashAggregate: groupBy=[customer.id], aggr=[MAX(max_fare) AS total_amount]
+        HashAggregate: groupBy=[customer.id], aggr=[SUM(order.amount) AS total_amount]
           Join: condition=[customer.id = order.customer_id]
             Query Stage #1: repartition=[customer.id]
               Scan: customer
