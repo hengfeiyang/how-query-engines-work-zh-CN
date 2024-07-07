@@ -1,18 +1,19 @@
 # 测试
 
-Query engines are complex, and it is easy to inadvertently introduce subtle bugs that could result in queries returning incorrect results, so it is important to have rigorous testing in place.
+查询引擎非常复杂，很容易无意中引入细微的错误，导致查询返回不正确的结果，因此进行严格的测试非常重要。
 
-## Unit Testing
-An excellent first step is to write unit tests for the individual operators and expressions, asserting that they produce the correct output for a given input. It is also essential to cover error cases.
+## 单元测试
 
-Here are some suggestions for things to consider when writing unit tests:
+第一步最好是为各个运算符和表达式编写单元测试，确保它们在给定输入下产生正确的输出。同时也要覆盖错误情况。
 
-- What happens if an unexpected data type is used? For example, calculating `SUM` on an input of strings.
-- Tests should cover edge cases, such as using the minimum and maximum values for numeric data types, and NaN (not a number) for floating point types, to ensure that they are handled correctly.
-- Tests should exist for underflow and overflow cases. For example, what happens when two long (64-bit) integer types are multiplied?
-- Tests should also ensure that null values are handled correctly.
+以下是编写单元测试时需要考虑的一些建议：
 
-When writing these tests, it is important to be able to construct record batches and column vectors with arbitrary data to use as inputs for operators and expressions. Here is an example of such a utility method.
+- 如果使用了意外的数据类型会发生什么？例如，在字符串输入上计算 `SUM`。
+- 测试应涵盖边缘情况，例如对数值类型使用最小值和最大值，以及浮点类型中的 NaN（非数字），以确保它们被正确处理。
+- 应该对下溢和上溢情况进行测试。例如，当两个长（64 位）整数类型相乘时会发生什么？
+- 测试还应确保正确处理空值。
+
+在编写这些测试时，能够构建具有任意数据的记录批次和列向量以用作运算符和表达式的输入非常重要。以下是此类实用方法的一个示例。
 
 ```kotlin
 private fun createRecordBatch(schema: Schema,
@@ -39,7 +40,7 @@ private fun createRecordBatch(schema: Schema,
 }
 ```
 
-Here is an example unit test for the "greater than or equals" (`>=`) expression being evaluated against a record batch containing two columns containing double-precision floating point values.
+以下是一个针对包含两个双精度浮点值列的记录批进行“大于或等于”（`>=`）表达式的示例单元测试。 
 
 ```kotlin
 @Test
@@ -66,23 +67,23 @@ fun `gteq doubles`() {
 }
 ```
 
-## Integration Testing
+## 集成测试
 
-Once unit tests are in place, the next step is to write integration tests that execute queries consisting of multiple operators and expressions and assert that they produce the expected output.
+一旦单元测试到位，下一步就是编写集成测试，执行由多个运算符和表达式组成的查询，并断言它们产生预期的输出。
 
-There are a few popular approaches to integration testing of query engines:
+有几种流行的查询引擎集成测试方法：
 
-- **Imperative Testing**: Hard-coded queries and expected results, either written as code or stored as files containing the queries and results.
-- **Comparative Testing**: This approach involves executing queries against another (trusted) query engine and asserting that both query engines produced the same results.
-- **Fuzzing**: Generating random operator and expression trees to capture edge cases and get comprehensive test coverage.
+- **命令式测试**: 硬编码查询和预期结果，可以作为代码编写或存储为包含查询和结果的文件。
+- **比较性测试**: 这种方法涉及对另一个（可信赖的）查询引擎执行查询，并断言两个查询引擎产生相同的结果。
+- **模糊测试**: 生成随机运算符和表达式树，以捕捉边缘情况并获得全面的测试覆盖。
 
-## Fuzzing
+## 模糊测试
 
-Much of the complexity of query engines comes from the fact that operators and expressions can be combined through infinite combinations due to the nested nature of operator and expression trees, and it is unlikely that hand-coding test queries will be comprehensive enough.
+查询引擎的复杂性很大程度上来自于运算符和表达式可以通过无限组合进行组合，因为运算符和表达式树具有嵌套性质，手工编写测试查询不太可能足够全面。
 
-Fuzzing is a technique for producing random input data. When applied to query engines, this means creating random query plans.
+模糊测试是一种生成随机输入数据的技术。当应用于查询引擎时，这意味着创建随机查询计划。
 
-Here is an example of creating random expressions against a DataFrame. This is a recursive method and can produce deeply nested expression trees, so it is important to build in a maximum depth mechanism.
+以下是针对 DataFrame 创建随机表达式的示例。这是一种递归方法，可以生成深度嵌套的表达式树，因此构建最大深度机制非常重要。
 
 ```kotlin
 fun createExpression(input: DataFrame, depth: Int, maxDepth: Int): LogicalExpr {
@@ -114,13 +115,13 @@ fun createExpression(input: DataFrame, depth: Int, maxDepth: Int): LogicalExpr {
 }
 ```
 
-Here is example of an expression generated with this method. Note that column references are represented here with an index following a hash, e.g. `#1` represents column at index 1. This expression is almost certainly invalid (depending on the query engine implementation), and this is to be expected when using a fuzzer. This is still valuable because it will test error conditions that otherwise would not be covered when manually writing tests.
+以下是使用此方法生成的表达式示例。请注意，这里的列引用用哈希后的索引表示，例如 `#1` 代表索引为1的列。这个表达式几乎肯定是无效的（取决于查询引擎的实现），这是使用模糊测试时预期会发生的情况。这仍然有价值，因为它将测试手动编写测试时不会覆盖的错误条件。
 
 ```
 #5 > 0.5459397414890019 < 0.3511239641785846 OR 0.9137719758607572 > -6938650321297559787 < #0 AND #3 < #4 AND 'qn0NN' OR '1gS46UuarGz2CdeYDJDEW3Go6ScMmRhA3NgPJWMpgZCcML1Ped8haRxOkM9F' >= -8765295514236902140 < 4303905842995563233 OR 'IAseGJesQMOI5OG4KrkitichlFduZGtjXoNkVQI0Alaf2ELUTTIci' = 0.857970478666058 >= 0.8618195163699196 <= '9jaFR2kDX88qrKCh2BSArLq517cR8u2' OR 0.28624225053564 <= 0.6363627130199404 > 0.19648131921514966 >= -567468767705106376 <= #0 AND 0.6582592932801918 = 'OtJ0ryPUeSJCcMnaLngBDBfIpJ9SbPb6hC5nWqeAP1rWbozfkPjcKdaelzc' >= #0 >= -2876541212976899342 = #4 >= -3694865812331663204 = 'gWkQLswcU' != #3 > 'XiXzKNrwrWnQmr3JYojCVuncW9YaeFc' >= 0.5123788261193981 >= #2
 ```
 
-A similar approach can be taken when creating logical query plans.
+创建逻辑查询计划时可以采用类似的方法。
 
 ```kotlin
 fun createPlan(input: DataFrame,
@@ -148,7 +149,7 @@ fun createPlan(input: DataFrame,
 }
 ```
 
-Here is an example of a logical query plan produced by this code.
+以下是此代码生成的一个逻辑查询计划示例。
 
 ```
 Filter: 'VejBmVBpYp7gHxHIUB6UcGx' OR 0.7762591612853446
@@ -160,7 +161,7 @@ Filter: 'VejBmVBpYp7gHxHIUB6UcGx' OR 0.7762591612853446
             Scan: employee.csv; projection=None
 ```
 
-This straightforward approach to fuzzing will produce a high percentage of invalid plans. It could be improved to reduce the risk of creating invalid logical plans and expressions by adding more contextual awareness. For example, generating an `AND` expression could generate left and right expressions that produce a Boolean result. However, there is a danger in only creating correct plans because it could limit the test coverage. Ideally, it should be possible to configure the fuzzer with rules for producing query plans with different characteristics.
+这种直接的模糊测试方法将产生高比例的无效计划。通过增加更多上下文意识，可以改进以减少创建无效逻辑计划和表达式的风险。例如，生成一个 `AND` 表达式时，可以生成左侧和右侧表达式来产生布尔结果。然而，仅仅创建正确的计划存在危险，因为这可能会限制测试覆盖范围。理想情况下，应该可以使用规则来配置模糊测试器，以生成具有不同特征的查询计划。
 
 *这本书还可通过 [https://leanpub.com/how-query-engines-work](https://leanpub.com/how-query-engines-work) 购买 ePub、MOBI 和 PDF格式版本。*
 
